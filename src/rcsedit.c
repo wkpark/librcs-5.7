@@ -1504,6 +1504,9 @@ makedirtemp(isworkfile)
 	register size_t dl;
 	register struct buf *bn;
 	register char const *name = isworkfile ? workname : RCSname;
+#	if has_mktemp
+	int fd;
+#	endif
 
 	dl = basefilename(name) - name;
 	bn = &dirtpname[newRCSdirtp_index + isworkfile];
@@ -1522,10 +1525,12 @@ makedirtemp(isworkfile)
 	catchints();
 #	if has_mktemp
 		VOID strcpy(tp, "XXXXXX");
-		if (!mktemp(np) || !*np)
+		fd = mkstemp(np);
+		if (fd < 0 || !*np)
 		    faterror("can't make temporary pathname `%.*s_%cXXXXXX'",
 			(int)dl, name, '0'+isworkfile
 		    );
+		close(fd);
 #	else
 		/*
 		 * Posix 1003.1-1990 has no reliable way
