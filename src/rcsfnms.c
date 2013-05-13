@@ -195,8 +195,8 @@ FILE *workstdout;
 struct stat RCSstat;
 char const *suffixes;
 
-static char const rcsdir[] = "RCS";
-#define rcslen (sizeof(rcsdir)-1)
+static char const *rcsdir = "RCS";
+#define rcslen (strlen(rcsdir))
 
 static struct buf RCSbuf, RCSb;
 static int RCSerrno;
@@ -589,6 +589,9 @@ rcssuffix(name)
 {
 	char const *x, *p, *nz;
 	size_t nl, xl;
+	static char const *s;
+
+	if (s = cgetenv("RCSDIR")) rcsdir = s;
 
 	nl = strlen(name);
 	nz = name + nl;
@@ -727,6 +730,7 @@ pairnames(argc, argv, rcsopen, mustread, quiet)
 	char const *base, *RCSbase, *x;
 	int paired;
 	size_t arglen, dlen, baselen, xlen;
+	static char const *s;
 
 	fdlock = -1;
 
@@ -735,6 +739,8 @@ pairnames(argc, argv, rcsopen, mustread, quiet)
 		error("%s option is ignored after pathnames", arg);
 		return 0;
 	}
+
+	if (s = cgetenv("RCSDIR")) rcsdir = s;
 
 	base = basefilename(arg);
 	paired = false;
