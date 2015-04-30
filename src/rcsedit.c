@@ -998,6 +998,7 @@ escape_string(out, s)
 	    case 0: return;
 	    case '\t': aputs("\\t", out); break;
 	    case '\n': aputs("\\n", out); break;
+	    case '\r': aputs("\\r", out); break;
 	    case ' ': aputs("\\040", out); break;
 	    case KDELIM: aputs("\\044", out); break;
 	    case '\\': if (VERSION(5)<=RCSversion) {aputs("\\\\", out); break;}

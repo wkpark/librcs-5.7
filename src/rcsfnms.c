@@ -638,7 +638,7 @@ finopen(rcsopen, mustread)
 	preferold  =  RCSbuf.string[0] && (mustread||0<=fdlock);
 
 	finptr = (*rcsopen)(&RCSb, &RCSstat, mustread);
-	interesting = finptr || errno!=ENOENT;
+	interesting = finptr || (errno!=ENOENT && errno!=ENOTDIR);
 	if (interesting || !preferold) {
 		/* Use the new name.  */
 		RCSerrno = errno;
@@ -763,7 +763,7 @@ pairnames(argc, argv, rcsopen, mustread, quiet)
 		if (
 		    1 < argc  &&
 		    (x = rcssuffix(RCS1 = argv[1]))  &&
-		    baselen  <=  x - RCS1  &&
+		    baselen  <=  (x - RCS1)  &&
 		    ((RCSbase=x-baselen)==RCS1 || isSLASH(RCSbase[-1])) &&
 		    memcmp(base, RCSbase, baselen) == 0
 		) {
