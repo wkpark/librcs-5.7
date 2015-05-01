@@ -38,7 +38,7 @@ static void cleanup P((void));
 static RILE *workptr;
 static int exitstatus;
 
-mainProg(rcscleanId, "rcsclean", "$Id: rcsclean.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
+mainProg(rcsclean, "$Id: rcsclean.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
 {
 	static char const usage[] =
 		"\nrcsclean: usage: rcsclean -ksubst -{nqru}[rev] -T -Vn -xsuff -zzone file ...";
@@ -52,11 +52,14 @@ mainProg(rcscleanId, "rcsclean", "$Id: rcsclean.c,v 5.9 1995/06/16 06:19:24 egge
 	struct hshentries *deltas;
 	struct hshentry *delta;
 	struct stat workstat;
+	cmdId("rcsclean");
 
 	setrid();
 
 	expmode = -1;
 	rev = 0;
+	exitstatus = EXIT_SUCCESS;
+	nerror = 0;
 	suffixes = X_DEFAULT;
 	perform = true;
 	unlockflag = false;
@@ -247,6 +250,7 @@ cleanup()
 	dirtempunlink();
 }
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr rcscleanExit
 #endif
@@ -258,6 +262,7 @@ exiterr()
 	tempunlink();
 	_exit(EXIT_FAILURE);
 }
+#endif
 
 	static int
 unlock(delta)

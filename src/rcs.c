@@ -276,7 +276,7 @@ static struct delrevpair delrev;
 static struct hshentry *cuthead, *cuttail, *delstrt;
 static struct hshentries *gendeltas;
 
-mainProg(rcsId, "rcs", "$Id: rcs.c,v 5.21 1995/06/16 06:19:24 eggert Exp $")
+mainProg(rcs, "$Id: rcs.c,v 5.21 1995/06/16 06:19:24 eggert Exp $")
 {
 	static char const cmdusage[] =
 		"\nrcs usage: rcs -{ae}logins -Afile -{blu}[rev] -cstring -{iILqTU} -ksubst -mrev:msg -{nN}name[:[rev]] -orange -sstate[:rev] -t[text] -Vn -xsuff -zzone file ...";
@@ -291,9 +291,12 @@ mainProg(rcsId, "rcs", "$Id: rcs.c,v 5.21 1995/06/16 06:19:24 eggert Exp $")
 	struct Lockrev *lockpt;
 	struct Lockrev **curlock, **rmvlock;
         struct  Status  * curstate;
+	cmdId("rcs");
 
 	nosetid();
 
+	exitstatus = EXIT_SUCCESS;
+	nerror = 0;
 	nextassoc = &assoclst;
 	nextchaccess = &chaccess;
 	nextmessage = &messagelst;
@@ -652,6 +655,10 @@ cleanup()
 	dirtempunlink();
 }
 
+#ifndef RCS_lib
+#if RCS_lint
+#	define exiterr rcsExit
+#endif
 	void
 exiterr()
 {
@@ -660,6 +667,7 @@ exiterr()
 	tempunlink();
 	_exit(EXIT_FAILURE);
 }
+#endif
 
 
 	static void
@@ -1621,7 +1629,7 @@ main(argc, argv)
 	go(coId,	coExit);
 	go(identId,	identExit);
 	go(mergeId,	mergeExit);
-	go(rcsId,	exiterr);
+	go(rcsId,	rcsExit);
 	go(rcscleanId,	rcscleanExit);
 	go(rcsdiffId,	rdiffExit);
 	go(rcsmergeId,	rmergeExit);

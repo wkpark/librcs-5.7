@@ -406,10 +406,16 @@ struct assoc {
 
 #if RCS_lint
 #	define libId(name,rcsid)
-#	define mainProg(name,cmd,rcsid) int name mainArgs
+#	define mainProg(cmd,rcsid) int name mainArgs
+#       define cmdId(c)
+#elif RCS_lib
+#	define libId(name,rcsid) char const name[] = rcsid;
+#	define mainProg(c,i) char const Copyright_##c[] = "Copyright 1982,1988,1989 Walter F. Tichy, Purdue CS\nCopyright 1990,1991,1992,1993,1994,1995 Paul Eggert", baseid_##c[] = RCSBASE; libId(c ## Id,i) int c##Main P((int,char**)); int c##Main mainArgs
+#       define cmdId(c) cmdid = c
 #else
 #	define libId(name,rcsid) char const name[] = rcsid;
-#	define mainProg(n,c,i) char const Copyright[] = "Copyright 1982,1988,1989 Walter F. Tichy, Purdue CS\nCopyright 1990,1991,1992,1993,1994,1995 Paul Eggert", baseid[] = RCSBASE, cmdid[] = c; libId(n,i) int main P((int,char**)); int main mainArgs
+#	define mainProg(c,i) char const Copyright[] = "Copyright 1982,1988,1989 Walter F. Tichy, Purdue CS\nCopyright 1990,1991,1992,1993,1994,1995 Paul Eggert", baseid[] = RCSBASE, cmdid[] = #c; libId(c ## Id,i) int main P((int,char**)); int main mainArgs
+#       define cmdId(c)
 #endif
 
 /*
@@ -439,7 +445,12 @@ enum markers { Nomatch, Author, Date, Header, Id,
 #define EMPTYLOG "*** empty log message ***" /* used by ci and rlog */
 
 /* main program */
+#ifndef RCS_lib
 extern char const cmdid[];
+#else
+extern char *cmdid;
+#endif
+
 void exiterr P((void)) exiting;
 
 /* merge */

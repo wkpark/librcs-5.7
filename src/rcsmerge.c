@@ -118,7 +118,7 @@ Report problems and direct all questions to:
 
 static char const co[] = CO;
 
-mainProg(rcsmergeId, "rcsmerge", "$Id: rcsmerge.c,v 5.15 1995/06/16 06:19:24 eggert Exp $")
+mainProg(rcsmerge, "$Id: rcsmerge.c,v 5.15 1995/06/16 06:19:24 eggert Exp $")
 {
 	static char const cmdusage[] =
 		"\nrcsmerge usage: rcsmerge -rrev1 [-rrev2] -ksubst -{pq}[rev] -Vn -xsuff -zzone file";
@@ -136,11 +136,13 @@ mainProg(rcsmergeId, "rcsmerge", "$Id: rcsmerge.c,v 5.15 1995/06/16 06:19:24 egg
 	struct buf numericrev; /* holds expanded revision number */
 	struct hshentries *gendeltas; /* deltas to be generated */
         struct hshentry * target;
+	cmdId("rcsmerge");
 
 	bufautobegin(&commarg);
 	bufautobegin(&numericrev);
 	edarg = rev[1] = rev[2] = 0;
 	status = 0; /* Keep lint happy.  */
+	nerror = 0;
 	tostdout = false;
 	expandarg = suffixarg = versionarg = zonearg = quietarg; /* no-op */
 	suffixes = X_DEFAULT;
@@ -276,6 +278,7 @@ mainProg(rcsmergeId, "rcsmerge", "$Id: rcsmerge.c,v 5.15 1995/06/16 06:19:24 egg
 	exitmain(nerror ? DIFF_TROUBLE : status);
 }
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr rmergeExit
 #endif
@@ -285,3 +288,4 @@ exiterr()
 	tempunlink();
 	_exit(DIFF_TROUBLE);
 }
+#endif

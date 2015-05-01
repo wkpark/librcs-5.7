@@ -103,7 +103,7 @@ static int match P((FILE*));
 static int scanfile P((FILE*,char const*,int));
 static void reportError P((char const*));
 
-mainProg(identId, "ident", "$Id: ident.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
+mainProg(ident, "$Id: ident.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
 /*  Ident searches the named files for all occurrences
  *  of the pattern $@: text $ where @ is a keyword.
  */
@@ -113,6 +113,7 @@ mainProg(identId, "ident", "$Id: ident.c,v 5.9 1995/06/16 06:19:24 eggert Exp $"
    int quiet = 0;
    int status = EXIT_SUCCESS;
    char const *a;
+   cmdId("ident");
 
    while ((a = *++argv)  &&  *a=='-')
 	while (*++a)
@@ -157,10 +158,10 @@ mainProg(identId, "ident", "$Id: ident.c,v 5.9 1995/06/16 06:19:24 eggert Exp $"
 }
 
 #if RCS_lint
-#	define exiterr identExit
+#	define _exiterr identExit
 #endif
 	void
-exiterr()
+_exiterr()
 {
 	_exit(EXIT_FAILURE);
 }
@@ -212,7 +213,8 @@ scanfile(file, name, quiet)
       */
       VOID fflush(stderr);
       VOID fflush(stdout);
-      exiterr();
+      _exiterr();
+      return 0;
    }
    if (!quiet)
       VOID fprintf(stderr, "%s warning: no id keywords in %s\n", cmdid, name);

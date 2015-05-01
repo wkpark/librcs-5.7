@@ -152,7 +152,7 @@ static int exitstatus;
 static RILE *workptr;
 static struct stat workstat;
 
-mainProg(rcsdiffId, "rcsdiff", "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert Exp $")
+mainProg(rcsdiff, "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert Exp $")
 {
     static char const cmdusage[] =
 	    "\nrcsdiff usage: rcsdiff -ksubst -q -rrev1 [-rrev2] -Vn -xsuff -zzone [diff options] file ...";
@@ -177,8 +177,10 @@ mainProg(rcsdiffId, "rcsdiff", "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert
     char *a, *dcp, **newargv;
     int no_diff_means_no_output;
     register c;
+    cmdId("rcsdiff");
 
     exitstatus = DIFF_SUCCESS;
+    nerror = 0;
 
     bufautobegin(&commarg);
     bufautobegin(&numericrev);
@@ -392,7 +394,7 @@ mainProg(rcsdiffId, "rcsdiff", "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert
 			    *diffp++ = "--binary";
 #	    endif
 	    diffp[0] = maketemp(0);
-	    if (runv(-1, diffp[0], cov)) {
+	    if (diffp[0] == NULL || runv(-1, diffp[0], cov)) {
 		    rcserror("co failed");
 		    continue;
 	    }
@@ -411,7 +413,7 @@ mainProg(rcsdiffId, "rcsdiff", "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert
 		    bufscat(&commarg, rev2); /* not xrev2, for $Name's sake */
 		    cov[3 + !DIFF_L] = commarg.string;
 		    diffp[1] = maketemp(1);
-		    if (runv(-1, diffp[1], cov)) {
+		    if (diffp[1] == NULL || runv(-1, diffp[1], cov)) {
 			    rcserror("co failed");
 			    continue;
 		    }
@@ -446,6 +448,7 @@ cleanup()
     Izclose(&workptr);
 }
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr rdiffExit
 #endif
@@ -455,6 +458,7 @@ exiterr()
     tempunlink();
     _exit(DIFF_TROUBLE);
 }
+#endif
 
 #if DIFF_L
 	static char const *

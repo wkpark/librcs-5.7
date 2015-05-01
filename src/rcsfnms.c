@@ -308,7 +308,7 @@ tmp()
 
 failed:
 	perror("Unable to create temp directory");
-	exit(123);
+	return NULL;
 }
 #endif
 
@@ -334,6 +334,10 @@ maketemp(n)
 	{
 #	if has_mktemp
 	    char const *tp = tmp();
+            if (tp == NULL) {
+                // Unable to create temp directory
+                return NULL;
+            }
 	    size_t tplen = dir_useful_len(tp);
 	    p = testalloc(tplen + 10);
 	    VOID sprintf(p, "%.*s%cT%cXXXXXX", (int)tplen, tp, SLASH, '0'+n);

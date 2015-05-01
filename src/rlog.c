@@ -219,7 +219,7 @@ static struct rcslockers *lockerlist;
 static struct stateattri *statelist;
 
 
-mainProg(rlogId, "rlog", "$Id: rlog.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
+mainProg(rlog, "$Id: rlog.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 {
 	static char const cmdusage[] =
 		"\nrlog usage: rlog -{bhLNRt} -ddates -l[lockers] -r[revs] -sstates -Vn -w[logins] -xsuff -zzone file ...";
@@ -239,7 +239,10 @@ mainProg(rlogId, "rlog", "$Id: rlog.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 	int pre5;
 	int shownames;
 	int revno;
+	cmdId("rlog");
 
+	exitstatus = EXIT_SUCCESS;
+	nerror = 0;
         descflag = selectflag = shownames = true;
 	onlylockflag = onlyRCSflag = false;
 	out = stdout;
@@ -475,6 +478,7 @@ cleanup()
 	Izclose(&finptr);
 }
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr rlogExit
 #endif
@@ -483,7 +487,7 @@ exiterr()
 {
 	_exit(EXIT_FAILURE);
 }
-
+#endif
 
 
 	static void

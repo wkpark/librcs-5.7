@@ -481,6 +481,8 @@ openfcopy(f)
 	if (!(fcopy = f)) {
 		if (!resultname)
 			resultname = maketemp(2);
+		if (resultname == NULL)
+			efaterror("can't make temp dir");
 		if (!(fcopy = fopen_update_truncate(resultname)))
 			efaterror(resultname);
 	}
@@ -664,6 +666,8 @@ enterstring()
 	fedit = 0;
 	editline = linecorr = 0;
 	resultname = maketemp(1);
+	if (resultname == NULL)
+		efaterror("can't make temp dir");
 	if (!(fcopy = fopen_update_truncate(resultname)))
 		efaterror(resultname);
 	copystring();

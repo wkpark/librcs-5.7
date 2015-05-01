@@ -1133,8 +1133,10 @@ static int Oerrloop;
 	void
 Oerror()
 {
-	if (Oerrloop)
+	if (Oerrloop) {
 		exiterr();
+		return;
+	}
 	Oerrloop = true;
 	efaterror("output error");
 }

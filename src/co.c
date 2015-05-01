@@ -192,7 +192,7 @@ static struct hshentries *gendeltas;	/* deltas to be generated	*/
 static struct hshentry *targetdelta;	/* final delta to be generated	*/
 static struct stat workstat;
 
-mainProg(coId, "co", "$Id: co.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
+mainProg(co, "$Id: co.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 {
 	static char const cmdusage[] =
 		"\nco usage: co -{fIlMpqru}[rev] -ddate -jjoins -ksubst -sstate -T -w[who] -Vn -xsuff -zzone file ...";
@@ -208,9 +208,12 @@ mainProg(coId, "co", "$Id: co.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 #	if OPEN_O_BINARY
 		int stdout_mode = 0;
 #	endif
+	cmdId("co");
 
 	setrid();
 	author = date = rev = state = 0;
+	exitstatus = EXIT_SUCCESS;
+	nerror = 0;
 	joinflag = 0;
 	bufautobegin(&numericrev);
 	expmode = -1;
@@ -524,6 +527,7 @@ cleanup()
 	dirtempunlink();
 }
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr coExit
 #endif
@@ -535,6 +539,7 @@ exiterr()
 	tempunlink();
 	_exit(EXIT_FAILURE);
 }
+#endif
 
 
 /*****************************************************************
@@ -758,6 +763,9 @@ buildjoin(initialfile)
 	bufautobegin(&subs);
 	rev2 = maketemp(0);
 	rev3 = maketemp(3); /* buildrevision() may use 1 and 2 */
+	if (rev2 == NULL || rev3 == NULL) {
+		goto badmerge;
+	}
 
 	cov[1] = CO;
 	/* cov[2] setup below */

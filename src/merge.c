@@ -41,12 +41,14 @@ badoption(a)
 }
 
 
-mainProg(mergeId, "merge", "$Id: merge.c,v 1.8 1995/06/16 06:19:24 eggert Exp $")
+mainProg(merge, "$Id: merge.c,v 1.8 1995/06/16 06:19:24 eggert Exp $")
 {
 	register char const *a;
 	char const *arg[3], *label[3], *edarg = 0;
 	int labels, tostdout;
+	cmdId("merge");
 
+	nerror = 0;
 	labels = 0;
 	tostdout = false;
 
@@ -96,12 +98,15 @@ mainProg(mergeId, "merge", "$Id: merge.c,v 1.8 1995/06/16 06:19:24 eggert Exp $"
 	for (;  labels < 3;  labels++)
 		label[labels] = arg[labels];
 
-	if (nerror)
+	if (nerror) {
 		exiterr();
+		return 0;
+	}
 	exitmain(merge(tostdout, edarg, label, arg));
 }
 
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr mergeExit
 #endif
@@ -111,3 +116,4 @@ exiterr()
 	tempunlink();
 	_exit(DIFF_TROUBLE);
 }
+#endif

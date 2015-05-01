@@ -1221,7 +1221,7 @@ setRCSversion(str)
 		RCSversion = VERSION(v);
 	} else {
 		printf("RCS version %s\n", RCS_version_string);
-		exit(0);
+		_exit(0);
 	}
 }
 
@@ -1390,3 +1390,15 @@ now()
 		efaterror("time");
 	return t;
 }
+
+#ifdef RCS_lib
+char *cmdid;
+	void
+exiterr()
+{
+	ORCSerror();
+	dirtempunlink();
+	tempunlink();
+	_exit(EXIT_FAILURE);
+}
+#endif

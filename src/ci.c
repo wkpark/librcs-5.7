@@ -275,7 +275,7 @@ static struct hshentry newdelta;	/* new delta to be inserted	*/
 static struct stat workstat;
 static struct Symrev *assoclst, **nextassoc;
 
-mainProg(ciId, "ci", "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
+mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 {
 	static char const cmdusage[] =
 		"\nci usage: ci -{fIklMqru}[rev] -d[date] -mmsg -{nN}name -sstate -ttext -T -Vn -wwho -xsuff -zzone file ...";
@@ -297,10 +297,14 @@ mainProg(ciId, "ci", "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 	mode_t newworkmode; /* mode for working file */
 	time_t mtime, wtime;
 	struct hshentry *workdelta;
+	cmdId("ci");
 
 	setrid();
 
 	author = rev = state = textfile = 0;
+	exitstatus = EXIT_SUCCESS;
+	nerror = 0;
+	msg.size = 0;
 	initflag = lockflag = mustread = false;
 	mtimeflag = false;
 	Ttimeflag = false;
@@ -595,6 +599,10 @@ mainProg(ciId, "ci", "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 		changedRCS = true;
         } else {
 		diffname = maketemp(0);
+		if (diffname == NULL) {
+			workerror("can't make temp dir");
+                        continue;
+		}
 		newhead  =  Head == &newdelta;
 		if (!newhead)
 			foutptr = frewrite;
@@ -837,6 +845,7 @@ cleanup()
 	dirtempunlink();
 }
 
+#ifndef RCS_lib
 #if RCS_lint
 #	define exiterr ciExit
 #endif
@@ -848,6 +857,7 @@ exiterr()
 	tempunlink();
 	_exit(EXIT_FAILURE);
 }
+#endif
 
 /*****************************************************************/
 /* the rest are auxiliary routines                               */

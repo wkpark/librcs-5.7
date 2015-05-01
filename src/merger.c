@@ -101,6 +101,7 @@ merge(tostdout, edarg, label, argv)
 			break;
 		default:
 			exiterr();
+			return 0;
 	}
 	if (t) {
 		if (!(f = fopenSafer(argv[0], FOPEN_W_WORK)))
@@ -135,8 +136,10 @@ merge(tostdout, edarg, label, argv)
 	aputs(tostdout ? "1,$p\n" : "w\n",  f);
 	Orewind(f);
 	aflush(f);
-	if (run(fileno(f), (char*)0, ED, "-", a[0], (char*)0))
+	if (run(fileno(f), (char*)0, ED, "-", a[0], (char*)0)) {
 		exiterr();
+		return 0;
+        }
 	Ofclose(f);
 #endif
 
