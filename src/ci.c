@@ -364,8 +364,10 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
                 case 'm':
 			if (msg.size) redefined('m');
 			msg = cleanlogmsg(a, strlen(a));
-			if (!msg.size)
-				error("missing message for -m option");
+			if (!msg.size) {
+				msg.size = 1;
+				msg.string = " ";
+			}
                         break;
 
                 case 'n':
