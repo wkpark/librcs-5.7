@@ -2196,7 +2196,11 @@ char *getlogin P((void));
 
 /* <stdlib.h> */
 char *getenv P((char const*));
+#ifdef RCS_lib
+#define _exit(x) return x
+#else
 void _exit P((int)) exiting;
+#endif
 void exit P((int)) exiting;
 malloc_type malloc P((size_t));
 malloc_type realloc P((malloc_type,size_t));
