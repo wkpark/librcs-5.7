@@ -177,6 +177,7 @@ mainProg(rcsdiff, "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert Exp $")
     char *a, *dcp, **newargv;
     int no_diff_means_no_output;
     register c;
+    int r;
     cmdId("rcsdiff");
 
     exitstatus = DIFF_SUCCESS;
@@ -262,7 +263,9 @@ mainProg(rcsdiff, "$Id: rcsdiff.c,v 5.19 1995/06/16 06:19:24 eggert Exp $")
 		    break;
 	    case 'V':
 		    versionarg = *argv;
-		    setRCSversion(versionarg);
+		    r = setRCSversion(versionarg);
+		    if (r > 0)
+			exitmain(exitstatus);
 		    goto option_handled;
 	    case 'k':
 		    expandarg = *argv;

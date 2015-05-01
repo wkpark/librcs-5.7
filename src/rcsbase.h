@@ -729,7 +729,7 @@ void awrite P((char const*,size_t,FILE*));
 void fastcopy P((RILE*,FILE*));
 void ffree P((void));
 void ffree1 P((char const*));
-void setRCSversion P((char const*));
+int setRCSversion P((char const*));
 #if has_signal
 	void catchints P((void));
 	void ignoreints P((void));

@@ -1194,7 +1194,7 @@ run(infd, outname, va_alist)
 
 int RCSversion;
 
-	void
+	int
 setRCSversion(str)
 	char const *str;
 {
@@ -1219,9 +1219,10 @@ setRCSversion(str)
 			);
 
 		RCSversion = VERSION(v);
+		return 0;
 	} else {
 		printf("RCS version %s\n", RCS_version_string);
-		_exit(0);
+		return 1;
 	}
 }
 

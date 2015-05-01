@@ -52,6 +52,7 @@ mainProg(rcsclean, "$Id: rcsclean.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
 	struct hshentries *deltas;
 	struct hshentry *delta;
 	struct stat workstat;
+	int i;
 	cmdId("rcsclean");
 
 	setrid();
@@ -115,7 +116,9 @@ mainProg(rcsclean, "$Id: rcsclean.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
 				goto handle_revision;
 
 			case 'V':
-				setRCSversion(*argv);
+				i = setRCSversion(*argv);
+				if (i > 0)
+					exitmain(exitstatus);
 				break;
 
 			case 'x':

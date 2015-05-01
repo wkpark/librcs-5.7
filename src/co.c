@@ -310,7 +310,9 @@ mainProg(co, "$Id: co.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 
 		case 'V':
 			versionarg = *argv;
-			setRCSversion(versionarg);
+			r = setRCSversion(versionarg);
+			if (r > 0)
+				exitmain(exitstatus);
 			break;
 
 		case 'z':

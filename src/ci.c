@@ -430,7 +430,9 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 			break;
 
 		case 'V':
-			setRCSversion(*argv);
+			r = setRCSversion(*argv);
+			if (r > 0)
+				exitmain(exitstatus);
 			break;
 
 		case 'z':

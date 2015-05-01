@@ -239,6 +239,7 @@ mainProg(rlog, "$Id: rlog.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 	int pre5;
 	int shownames;
 	int revno;
+	int i;
 	cmdId("rlog");
 
 	exitstatus = EXIT_SUCCESS;
@@ -318,7 +319,9 @@ mainProg(rlog, "$Id: rlog.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 			break;
 
 		case 'V':
-			setRCSversion(*argv);
+			i = setRCSversion(*argv);
+			if (i > 0)
+				exitmain(exitstatus);
 			break;
 
                 default:

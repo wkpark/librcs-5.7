@@ -191,7 +191,9 @@ mainProg(rcsmerge, "$Id: rcsmerge.c,v 5.15 1995/06/16 06:19:24 eggert Exp $")
 			break;
 		case 'V':
 			versionarg = *argv;
-			setRCSversion(versionarg);
+			i = setRCSversion(versionarg);
+			if (i > 0)
+				exitmain(status);
 			break;
 
 		case 'k':

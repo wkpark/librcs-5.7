@@ -291,6 +291,7 @@ mainProg(rcs, "$Id: rcs.c,v 5.21 1995/06/16 06:19:24 eggert Exp $")
 	struct Lockrev *lockpt;
 	struct Lockrev **curlock, **rmvlock;
         struct  Status  * curstate;
+	int i;
 	cmdId("rcs");
 
 	nosetid();
@@ -470,7 +471,9 @@ mainProg(rcs, "$Id: rcs.c,v 5.21 1995/06/16 06:19:24 eggert Exp $")
 			break;
 
 		case 'V':
-			setRCSversion(*argv);
+			i = setRCSversion(*argv);
+			if (i > 0)
+				exitmain(exitstatus);
 			break;
 
 		case 'z':
