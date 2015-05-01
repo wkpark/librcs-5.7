@@ -470,7 +470,6 @@ mainProg(rlog, "$Id: rlog.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 	    }
 	    aputs("=============================================================================\n",out);
 	  }
-	Ofclose(out);
 	exitmain(exitstatus);
 }
 
