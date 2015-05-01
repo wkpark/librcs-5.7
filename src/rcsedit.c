@@ -1956,4 +1956,5 @@ ORCSerror()
 	if (frewrite)
 		/* Avoid fclose, since stdio may not be reentrant.  */
 		VOID close(fileno(frewrite));
+	frewrite = 0;
 }
