@@ -993,7 +993,7 @@ write_stderr(s)
 {
 	size_t slen = strlen(s);
 	if (write(STDERR_FILENO, s, slen) != slen)
-		_exit(EXIT_TROUBLE);
+		exiterr();
 }
 #endif
 
@@ -1089,7 +1089,7 @@ runv(infd, outname, args)
 		    /* Avoid perror since it may misuse buffers.  */
 		    write_stderr(args[1]);
 		    write_stderr(": I/O redirection failed\n");
-		    _exit(EXIT_TROUBLE);
+		    exiterr();
 		}
 
 		if (outname)
@@ -1102,7 +1102,7 @@ runv(infd, outname, args)
 			write_stderr(": ");
 			write_stderr(outname);
 			write_stderr(": cannot create\n");
-			_exit(EXIT_TROUBLE);
+			exiterr();
 		    }
 		VOID exec_RCS(args[1], (char**)(args + 1));
 		notfound = args[1];
@@ -1116,7 +1116,7 @@ runv(infd, outname, args)
 		/* Avoid perror since it may misuse buffers.  */
 		write_stderr(notfound);
 		write_stderr(": not found\n");
-		_exit(EXIT_TROUBLE);
+		exiterr();
 	}
 	if (pid < 0)
 		efaterror("fork");
