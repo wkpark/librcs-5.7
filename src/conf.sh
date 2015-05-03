@@ -2197,7 +2197,12 @@ char *getlogin P((void));
 /* <stdlib.h> */
 char *getenv P((char const*));
 #ifdef RCS_lib
+#ifdef PHP
+#define E_ERROR	 (1<<0L)
+#define _exit(x) zend_error(E_ERROR, "%s(): RCS Error at %s(%d), ret=%d", __func__, __FILE__, __LINE__, x)
+#else
 #define _exit(x) return x
+#endif
 #else
 void _exit P((int)) exiting;
 #endif
