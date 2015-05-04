@@ -354,6 +354,77 @@ AC_DEFINE_UNQUOTED([ED], ["${ED}"],
 AC_DEFINE_UNQUOTED([MERGE], ["${MERGE}merge"],
 	[name of 'merge' program])
 
+AC_CACHE_CHECK([configuring fread_type, freadarg_type],[rcs_cv_fread_type],[
+rcs_cv_fread_type=
+rcs_cv_freadarg_type=
+AC_LANG_CONFTEST([
+AC_LANG_PROGRAM([[
+#include <stdio.h>
+#define CHAR1 '#' /* the first character in this file */
+#if !defined(fread) && declare_fread
+        fread_type fread (void*,freadarg_type,freadarg_type,FILE*);
+#endif
+]],[[
+        char b;
+        return !(
+                fread(&b, (freadarg_type)1, (freadarg_type)1, stdin) == 1  &&
+                b==CHAR1
+        );
+]])
+])
+rm -f conftest.txt
+echo '#' > conftest.txt
+for declare_fread in 1 0
+do
+        for fread_type in ssize_t size_t int unsigned
+        do
+                for freadarg_type in size_t ssize_t unsigned int
+                do
+                        rm -f conftest$ac_exeext || exit
+                        (
+                                $CC -o conftest$ac_exeext \
+                                        -Ddeclare_fread=$declare_fread \
+                                        -Dfreadarg_type=$freadarg_type \
+                                        -Dfread_type=$fread_type \
+                                        conftest.$ac_ext 2>conftest.err &&
+                                ./conftest$ac_exeext < conftest.txt
+                        ) >&2 && break
+                done && break
+        done && break
+done || {
+        echo >&6 $0: cannot deduce fread types
+        exit 1
+}
+
+rcs_cv_fread_type=$fread_type
+rcs_cv_freadarg_type=$freadarg_type
+])
+
+AC_SUBST(FREAD_TYPE)
+AC_DEFINE_UNQUOTED([FREAD_TYPE], [$rcs_cv_fread_type],
+	[type returned by fread() and fwrite()])
+
+AC_SUBST(FREADARG_TYPE)
+AC_DEFINE_UNQUOTED([FREADARG_TYPE], [$rcs_cv_freadarg_type],
+	[type of fread() size arguments])
+
+
+AC_CACHE_CHECK([configuring malloc_type], [rcs_cv_malloc_type],[
+rcs_cv_malloc_type=char
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+typedef void *malloc_type;
+#ifndef malloc
+        malloc_type malloc();
+#endif
+static malloc_type identity (malloc_type);
+static malloc_type identity(x) malloc_type x; { return x; }
+]],[[ return !identity(malloc(1)); ]]
+)], [rcs_cv_malloc_type=void])
+])
+
+AC_SUBST(MALLOC_TYPE)
+AC_DEFINE_UNQUOTED([MALLOC_TYPE], [$rcs_cv_malloc_type],
+	[type returned by malloc()])
 
 AC_CACHE_CHECK([configuring SLASHSLASH_IS_SLASH],[rcs_cv_slashslash_is_slash],[
 rcs_cv_slashslash_is_slash=0
