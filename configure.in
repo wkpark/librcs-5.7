@@ -76,7 +76,6 @@ AC_ARG_WITH(diffutils,
 
 case $with_diffutils in
 yes)
-  : ${CO='$(bindir)/co'}
   : ${DIFF='$(bindir)/diff'}
   : ${DIFF3=${DIFF}3}
   : ${DIFF3_BIN=1}
@@ -316,7 +315,13 @@ AC_PROG_MAKE_SET
 AS_IF([test 1 = `expr "$ac_pwd" : '/*'`],[woe=no],[woe=yes])
 RCS_CBOOL([WOE],[yes],[woe],[Are we trying to "support" MS-DOS?])
 
-AC_DEFINE_UNQUOTED([CO], ["${bindir}/co"],
+if test "x$exec_prefix" = xNONE
+then
+  CO="$ac_default_prefix/bin/co"
+else
+  eval CO="${bindir}/co"
+fi
+AC_DEFINE_UNQUOTED([CO], ["${CO}"],
 	[name of 'co' program])
 
 AC_DEFINE_UNQUOTED([DIFF], ["${DIFF}"],
@@ -328,7 +333,7 @@ AC_DEFINE_UNQUOTED([DIFF3], ["${DIFF3}"],
 AC_DEFINE_UNQUOTED([DIFF3_BIN], [${DIFF3_BIN}],
 	[Is diff3 user-visible (not the /usr/lib auxiliary)?])
 
-AC_DEFINE_UNQUOTED([DIFFFLAGS], ["${DIFF3FLAGS}"],
+AC_DEFINE_UNQUOTED([DIFFFLAGS], ["${DIFFFLAGS}"],
 	[Make diff output suitable for RCS.])
 
 AC_DEFINE_UNQUOTED([DIFF_L], [${DIFF_L}],
