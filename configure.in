@@ -309,9 +309,14 @@ esac
 # Similarly, if using traditional pic, use its -D option.
 AC_CHECK_PROGS(PIC, "pic -n" "gpic -n" "pic -D" "pic", pic)
 
+AC_ARG_PROGRAM
 AC_PROG_CC
 AC_PROG_INSTALL
+AC_PROG_RANLIB
 AC_PROG_MAKE_SET
+LT_INIT
+AC_PROG_LIBTOOL(libtool)
+AC_DISABLE_SHARED
 
 AS_IF([test 1 = `expr "$ac_pwd" : '/*'`],[woe=no],[woe=yes])
 RCS_CBOOL([WOE],[yes],[woe],[Are we trying to "support" MS-DOS?])

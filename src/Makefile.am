@@ -32,6 +32,17 @@ rcsmerge_SOURCES = rcsmerge.c merger.c rcsutil.c rcsfnms.c rcsmap.c rcsrev.c \
         rcssyn.c rcslex.c rcskeep.c rcskeys.c \
         maketime.c partime.c rcstime.c version.c
 
+lib_LTLIBRARIES = librcs.la
+librcs_la_SOURCES = ci.c co.c ident.c maketime.c merge.c merger.c partime.c rcs.c \
+	rcsclean.c rcsdiff.c rcsedit.c rcsfcmp.c rcsfnms.c rcsgen.c \
+	rcskeep.c rcskeys.c rcslex.c rcsmap.c rcsmerge.c rcsrev.c rcssyn.c \
+	rcstime.c rcsutil.c rlog.c version.c
+
+librcs_la_LDFLAGS = -version-info 0:0:0
+librcs_la_CFLAGS = -DPHP -DRCS_lib
+#librcs_la_LIBADD = @LIBOBJS@
+librcs_la_DEPENDENCIES = $(librcs_la_LIBADD)
+
 MAINTAINERCLEANFILES = $(srcdir)/version.c
 
 $(srcdir)/version.c: $(top_srcdir)/configure.in
