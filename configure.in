@@ -44,6 +44,7 @@ AC_CHECK_FUNCS_ONCE(fchmod ftruncate getpwuid_r psiginfo dup2 memchr sigaction s
 AC_CHECK_FUNCS_ONCE(getuid setuid setgid)
 AC_CHECK_FUNCS_ONCE(fputs vfprintf _doprintf _doprnt)
 AC_CHECK_FUNCS(madvise map_fd)
+AC_CHECK_FUNCS(getcwd getpwuid memcmp memcpy)
 AC_CHECK_FUNCS(readlink mktemp rename memmove)
 AC_CHECK_FUNCS(signal psignal kill)
 AC_REPLACE_FUNCS(memchr waitpid)
@@ -492,6 +493,184 @@ then
 AC_DEFINE_UNQUOTED([SIGNAL_TYPE], [$ac_cv_type_signal],
 	[type returned by signal handlers])
 fi
+
+
+AC_CACHE_CHECK([configuring mmap_signal],[rcs_cv_mmap_signal],[
+rcs_cv_mmap_signal=
+AC_LANG_CONFTEST([
+AC_LANG_SOURCE([[
+]AC_INCLUDES_DEFAULT[
+#include <signal.h>
+#include <sys/mman.h>
+#include <errno.h>
+#define CHAR1 '#'
+static char *a;
+static struct stat b;
+#ifndef MADVISE_OK
+#define MADVISE_OK (madvise(a,b.st_size,MADV_SEQUENTIAL)==0 && madvise(a,b.st_size,MADV_NORMAL)==0)
+#endif
+#ifndef WTERMSIG
+#define WTERMSIG(s) ((s)&0177)
+#undef WIFSIGNALED /* Avoid 4.3BSD incompatibility with Posix.  */
+#endif
+#ifndef WIFSIGNALED
+#define WIFSIGNALED(s) (((s)&0377) != 0177  &&  WTERMSIG(s) != 0)
+#endif
+#ifndef MAP_FAILED
+#define MAP_FAILED (-1)
+#endif
+#ifndef STDIN_FILENO
+#define STDIN_FILENO 0
+#endif
+#ifndef TRUE
+#define TRUE 1
+#endif
+int
+main(argc, argv) int argc; char **argv; {
+        int s = 0;
+#if TRY_MAP_FD
+        kern_return_t kr;
+        vm_address_t va;
+#endif
+
+        if (fstat(STDIN_FILENO, &b) != 0) {
+                perror("fstat");
+                return(1);
+        }
+#       if TRY_MAP_FD
+                kr = map_fd(STDIN_FILENO, 0, &va, TRUE, b.st_size);
+                if (kr != KERN_SUCCESS) {
+                        mach_error("map_fd", kr);
+                        return(1);
+                }
+                a = (char *) va;
+#       else
+                a = mmap(
+                        (char *)0, b.st_size, PROT_READ, MAP_SHARED,
+                        STDIN_FILENO, (off_t)0
+                );
+                if (a == (char *)MAP_FAILED) {
+                        perror("mmap");
+                        return(1);
+                }
+                if (!MADVISE_OK) {
+                        perror("madvise");
+                        return(1);
+                }
+#       endif
+        if (*a != CHAR1)
+                return(1);
+        if (1 < argc) {
+                pid_t p, w;
+                int f = creat(argv[1], 0);
+                /*
+                * Some buggy hosts yield ETXTBSY if you try to use creat
+                * to truncate a file that is mmapped.  On such hosts,
+                * don not bother to try to figure out what mmap_signal is.
+                */
+#               ifndef ETXTBSY
+#                       define ETXTBSY (-1)
+#               endif
+                if (f<0 ? errno!=ETXTBSY : close(f)!=0) {
+                        perror(argv[1]);
+                        return(1);
+                }
+                if ((p = fork()) < 0) {
+                        perror("fork");
+                        return(1);
+                }
+                if (!p)
+                        /* Refer to nonexistent storage, causing a signal in the child.  */
+                        _exit(a[0] != 0);
+                while ((w = wait(&s)) != p)
+                        if (w < 0) {
+                                perror("wait");
+                                return(1);
+                        }
+                s = WIFSIGNALED(s) ? WTERMSIG(s) : 0;
+        }
+#       if TRY_MAP_FD
+                kr = vm_deallocate(task_self(), va, (vm_size_t) b.st_size);
+                if (kr != KERN_SUCCESS) {
+                        mach_error("vm_deallocate", kr);
+                        return(1);
+                }
+#       else
+                if (munmap(a, b.st_size)  !=  0) {
+                        perror("munmap");
+                        return(1);
+                }
+#       endif
+        if (1 < argc) {
+#               ifdef SIGBUS
+                        if (s == SIGBUS) { printf("SIGBUS\n"); s = 0; }
+#               endif
+#               ifdef SIGSEGV
+                        if (s == SIGSEGV) { printf("SIGSEGV\n"); s = 0; }
+#               endif
+                if (s) printf("%d\n", s);
+        }
+        return(ferror(stdout) || fclose(stdout)!=0);
+}
+]])
+])
+
+echo '#' > conftest.inp
+# AIX 3.2.0 read-only mmap updates last-modified time of file!  Check for this.
+sleep 2
+cp conftest.$ac_ext conftest.d || exit
+sleep 2
+has_map_fd=? has_mmap=? has_madvise=? mmap_signal=
+case `(uname -s -r -v) 2>/dev/null` in
+'HP-UX '[A-Z].08.07*) ;;
+        # mmap can crash the OS under HP-UX 8.07, so don't even test for it.
+'HP-UX '[A-Z].09.*) ;;
+        # HP-UX 9.0[135]? s700 mmap has a data integrity problem
+        # when a diskless cnode accesses data on the cnode's server disks.
+        # We don't know of any way to test whether the bug is present.
+        # HP patches PHKL_4605 and PHKL_4607 should fix the bug;
+        # see <http://support.mayfield.hp.com/slx/html/ptc_hpux.html>.
+        # The above code (perhaps rashly) assumes HP-UX 10 supports mmap.
+'SunOS 5.4 Generic' | 'SunOS 5.4 Generic_101945-?') ;;
+        # Early editions of SunOS 5.4 are reported to have problems with mmap
+        # that generate NUL bytes in RCS files with a Solaris 2.2 NFS server.
+        # This has been reported to be fixed as of patch 101945-10.
+*)
+        if ($CC -DTRY_MAP_FD=1 conftest.$ac_ext -o conftest$ac_exeext 2>conftest.err && ./conftest$ac_exeext < conftest.inp) >&2
+        then
+                has_map_fd=1
+        else
+                has_map_fd=0 has_mmap=0 has_madvise=0
+                if ($CC -DMADVISE_OK=1 conftest.$ac_ext -o conftest$ac_exeext 2>conftest.err && ./conftest$ac_exeext < conftest.inp) >&2
+                then
+                        case `ls -t conftest.$ac_ext conftest.d` in
+                        conftest.d*)
+                                has_mmap=1
+                                rm -f a.ous
+                                mv ./conftest$ac_exeext a.ous
+                                if ($CC conftest.$ac_ext -o conftest$ac_exeext 2>conftest.err && ./conftest$ac_exeext < conftest.inp) >&2
+                                then has_madvise=1; rm -f a.ous
+                                else rm -f ./conftest$ac_exeext && mv a.ous ./conftest$ac_exeext
+                                fi || exit
+                        esac
+                fi
+        fi
+        case $has_map_fd$has_mmap in
+        *1*)
+                # Find out what signal is sent to RCS
+                # when someone unexpectedly truncates a file
+                # while RCS has it mmapped.
+                cp conftest.inp conftest.inp2 &&
+                mmap_signal=`./conftest$ac_exeext conftest.inp2 < conftest.inp2` || exit
+        esac
+esac
+echo >&6 $has_map_fd, $has_mmap, $has_madvise, $mmap_signal
+rcs_cv_mmap_signal=$mmap_signal
+])
+
+AC_SUBST(MMAP_SIGNAL)
+AC_DEFINE_UNQUOTED([MMAP_SIGNAL], [$rcs_cv_mmap_signal],
+	[signal received if you reference nonexistent part of mmapped file])
 
 
 AC_CACHE_CHECK([configuring SLASHSLASH_IS_SLASH],[rcs_cv_slashslash_is_slash],[
