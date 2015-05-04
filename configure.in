@@ -820,7 +820,17 @@ AC_SUBST(LARGE_MEMORY)
 AC_MSG_CHECKING([configuring large_memory])
 AC_CACHE_VAL(rcs_cv_large_memory, [
   rcs_cv_large_memory=0
-  case "$ac_cv_func_map_fd$ac_cv_func_mmap_fixed_mapped" in
+  has_map_fd=0
+  has_mmap=0
+  if test "x$ac_cv_func_map_fd" = xyes
+  then
+    has_map_fd=1
+  fi
+  if test "x$ac_cv_func_mmap_fixed_mapped" = xyes
+  then
+    has_mmap=1
+  fi
+  case "$has_map_fd$has_mmap" in
   *1*) rcs_cv_large_memory=1;;
   *) rcs_cv_large_memory=0
   esac
