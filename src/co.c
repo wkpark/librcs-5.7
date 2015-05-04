@@ -459,7 +459,7 @@ mainProg(co, "$Id: co.c,v 5.18 1995/06/16 06:19:24 eggert Exp $")
 			joinflag&&tostdout ? (FILE*)0 : neworkptr,
 			Expand < MIN_UNEXPAND
 		);
-#		if !large_memory
+#		if !LARGE_MEMORY
 			if (fcopy == neworkptr)
 				fcopy = 0;  /* Don't close it twice.  */
 #		endif
@@ -522,7 +522,7 @@ cleanup()
 	if (nerror) exitstatus = EXIT_FAILURE;
 	Izclose(&finptr);
 	ORCSclose();
-#	if !large_memory
+#	if !LARGE_MEMORY
 		if (fcopy!=workstdout) Ozclose(&fcopy);
 #	endif
 	if (neworkptr!=workstdout) Ozclose(&neworkptr);

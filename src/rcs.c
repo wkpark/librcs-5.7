@@ -625,7 +625,7 @@ mainProg(rcs, "$Id: rcs.c,v 5.21 1995/06/16 06:19:24 eggert Exp $")
 	if (initflag) {
 		/* Adjust things for donerewrite's sake.  */
 		if (stat(workname, &RCSstat) != 0) {
-#		    if bad_creat0
+#		    if BAD_CREAT0
 			mode_t m = umask(0);
 			(void) umask(m);
 			RCSstat.st_mode = (S_IRUSR|S_IRGRP|S_IROTH) & ~m;

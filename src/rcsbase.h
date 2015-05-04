@@ -186,8 +186,181 @@ Report problems and direct all questions to:
  */
 
 
-#include "conf.h"
+#include "config.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <errno.h>
+#include <stdio.h>
+#include <time.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <fcntl.h>
+
+#include <pwd.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/mman.h>
+#include <sys/wait.h>
+#ifdef HAVE_UCONTEXT_H
+#include <ucontext.h>
+#endif
+#include <unistd.h>
+#include <utime.h>
+
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
+#ifdef HAVE_MACH_MACH_H
+#include <mach/mach.h>
+#endif
+#ifdef HAVE_NET_ERRNO_H
+#include <net/errno.h>
+#endif
+#ifdef HAVE_VFORK_H
+#include <vfork.h>
+#endif
+
+#ifdef HAVE_SIGINFO_H
+#include <siginfo.h>
+#endif
+
+#ifdef HAVE_GCC_NORETURN
+#define exiting __attribute__((noreturn))
+#else
+#define exiting
+#endif
+
+#if PROTOTYPES
+#define P(params) params
+#else
+#define P(params) ()
+#endif
+
+#ifdef __GNUC__
+#define printf_string(m, n) __attribute__((format(printf, m, n)))
+#else
+#define printf_string(m, n)
+#endif
+
+#if defined(__GNUC__) && defined(HAVE_GCC_NORETURN)
+        /* Work around a bug in GCC 2.5.x.  */
+#define printf_string_exiting(m, n) __attribute__((format(printf, m, n), noreturn))
+#else
+#define printf_string_exiting(m, n) printf_string(m, n) exiting
+#endif
+
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#elif HAVE_VARARGS_H
+#include <varargs.h>
+#endif
+
+typedef FREAD_TYPE fread_type; /* type returned by fread() and fwrite() */
+typedef FREADARG_TYPE freadarg_type; /* type of their size arguments */
+typedef MALLOC_TYPE *malloc_type; /* type returned by malloc() */
+
+#define signal_type SIGNAL_TYPE
+
+#ifdef RCS_lib
+#ifdef PHP
+#define E_ERROR  (1<<0L)
+#define _exit(x) zend_error(E_ERROR, "%s(): RCS Error at %s(%d), ret=%d", __func__, __FILE__, __LINE__, x)
+#else
+#define _exit(x) return x
+#endif
+#else
+void _exit P((int)) exiting;
+#endif
+
+malloc_type malloc P((size_t));
+malloc_type realloc P((malloc_type,size_t));
+
+#if O_BINARY
+/* Text and binary i/o behave differently.  */
+/* This is incompatible with Posix and Unix.  */
+#define FOPEN_RB "rb"
+#define FOPEN_R_WORK (Expand==BINARY_EXPAND ? "r" : "rb")
+#define FOPEN_WB "wb"
+#define FOPEN_W_WORK (Expand==BINARY_EXPAND ? "w" : "wb")
+#define FOPEN_WPLUS_WORK (Expand==BINARY_EXPAND ? "w+" : "w+b")
+#define OPEN_O_BINARY O_BINARY
+#else
+/*
+ * Text and binary i/o behave the same.
+ * Omit "b", since some nonstandard hosts reject it.
+ */
+#define FOPEN_RB "r"
+#define FOPEN_R_WORK "r"
+#define FOPEN_WB "w"
+#define FOPEN_W_WORK "w"
+#define FOPEN_WPLUS_WORK "w+"
+#define OPEN_O_BINARY 0
+#endif
+
+/* This may need changing on non-Unix systems (notably DOS).  */
+#define OPEN_CREAT_READONLY (S_IRUSR|S_IRGRP|S_IROTH) /* lock file mode */
+#define OPEN_O_LOCK 0 /* extra open flags for creating lock file */
+#define OPEN_O_WRONLY O_WRONLY /* main open flag for creating a lock file */
+
+/* <fcntl.h> */
+#ifdef O_CREAT
+#       define OPEN_CAN_CRATE 1
+#else
+#       define OPEN_CAN_CRATE 0
+#endif
+
+/* Filename component separation.
+   TMPDIR	string		Default directory for temporary files.
+   SLASH	char		Principal filename separator.
+   SLASHes	case SLASHes:’	Labels all filename separators.
+   ABSFNAME(p)	expression	Is p an absolute filename?
+   X_DEFAULT	string		Default value for -x option.
+*/
+#if !WOE
+#define TMPDIR "/tmp"
+#define SLASH '/'
+#define SLASHes '/'
+#define ROOTPATH(p)  (isSLASH ((p)[0]))
+#define X_DEFAULT ",v"
+#else /* WOE */
+#define TMPDIR "\\tmp"
+#define SLASH "'\\'"
+#define SLASHes '\\': case '/': case ':'
+#define ROOTPATH(p)  (isSLASH ((p)[0]) || (p)[0] && (p)[1] == ':')
+#define X_DEFAULT "\\,v"
+#endif
+
+/* FIXME */
+#define va_start_args 2 /* How many args does va_start() take?  */
+#if va_start_args == 2
+#define vararg_start va_start
+#else
+#define vararg_start(ap,p) va_start(ap)
+#endif
+
+/* Do struct stat s and t describe the same file?  Answer d if unknown.  */
+#define same_file(s,t,d) ((s).st_ino==(t).st_ino && (s).st_dev==(t).st_dev)
+
+#if HAVE_READLINK && !defined(MAXSYMLINKS)
+#       if HAVE_SYS_PARAM_H
+#               include <sys/param.h>
+#       endif
+#       ifndef MAXSYMLINKS
+#               define MAXSYMLINKS 20 /* BSD; not standard yet */
+#       endif
+#endif
+
+#define VOID (void)
+
+#define exitmain(n) return n /* how to exit from main() */
 
 #define EXIT_TROUBLE DIFF_TROUBLE
 
@@ -195,6 +368,20 @@ Report problems and direct all questions to:
 #	define SIZEABLE_PATH _POSIX_PATH_MAX
 #else
 #	define SIZEABLE_PATH 255 /* size of a large path; not a hard limit */
+#endif
+
+#if HAVE_SPAWN
+#       if ALL_ABSOLUTE
+#               define spawn_RCS spawnv
+#       else
+#               define spawn_RCS spawnvp
+#       endif
+#else
+#       if ALL_ABSOLUTE
+#               define exec_RCS execv
+#       else
+#               define exec_RCS execvp
+#       endif
 #endif
 
 /* for traditional C hosts with unusual size arguments */
@@ -252,22 +439,22 @@ Report problems and direct all questions to:
  * Following such macros with `; else' results in a syntax error.
  */
 
-#define maps_memory (has_map_fd || has_mmap)
+#define MAPS_MEMORY (HAVE_MAP_FD || HAVE_MMAP)
 
-#if large_memory
+#if LARGE_MEMORY
 	typedef unsigned char const *Iptr_type;
 	typedef struct RILE {
 		Iptr_type ptr, lim;
 		unsigned char *base; /* not Iptr_type for lint's sake */
 		unsigned char *readlim;
 		int fd;
-#		if maps_memory
+#		if MAPS_MEMORY
 			void (*deallocate) P((struct RILE *));
 #		else
 			FILE *stream;
 #		endif
 	} RILE;
-#	if maps_memory
+#	if MAPS_MEMORY
 #		define declarecache register Iptr_type ptr, lim
 #		define setupcache(f) (lim = (f)->lim)
 #		define Igeteof_(f,c,s) if ((f)->ptr==(f)->lim) s else (c)= *(f)->ptr++;
@@ -484,12 +671,12 @@ void keepdirtemp P((char const*));
 void openfcopy P((FILE*));
 void snapshotedit P((FILE*));
 void xpandstring P((struct hshentry const*));
-#if has_NFS || bad_unlink
+#if USE_NFS || BAD_UNLINK
 	int un_link P((char const*));
 #else
 #	define un_link(s) unlink(s)
 #endif
-#if large_memory
+#if LARGE_MEMORY
 	void edit_string P((void));
 #	define editstring(delta) edit_string()
 #else
@@ -607,20 +794,20 @@ void warn P((char const*,...)) printf_string(1,2);
 void warnignore P((void));
 void workerror P((char const*,...)) printf_string(1,2);
 void workwarn P((char const*,...)) printf_string(1,2);
-#if has_madvise && has_mmap && large_memory
+#if HAVE_MADVISE && HAVE_MMAP && LARGE_MEMORY
 	void advise_access P((RILE*,int));
 #	define if_advise_access(p,f,advice) if (p) advise_access(f,advice)
 #else
 #	define advise_access(f,advice)
 #	define if_advise_access(p,f,advice)
 #endif
-#if large_memory && maps_memory
+#if LARGE_MEMORY && MAPS_MEMORY
 	RILE *I_open P((char const*,struct stat*));
 #	define Iopen(f,m,s) I_open(f,s)
 #else
 	RILE *Iopen P((char const*,char const*,struct stat*));
 #endif
-#if !large_memory
+#if !LARGE_MEMORY
 	void testIeof P((FILE*));
 	void Irewind P((RILE*));
 #endif
@@ -730,7 +917,7 @@ void fastcopy P((RILE*,FILE*));
 void ffree P((void));
 void ffree1 P((char const*));
 int setRCSversion P((char const*));
-#if has_signal
+#if HAVE_SIGNAL
 	void catchints P((void));
 	void ignoreints P((void));
 	void restoreints P((void));
@@ -739,21 +926,21 @@ int setRCSversion P((char const*));
 #	define ignoreints()
 #	define restoreints()
 #endif
-#if has_mmap && large_memory
-#   if has_NFS && mmap_signal
+#if HAVE_MMAP && LARGE_MEMORY
+#   if USE_NFS && MMAP_SIGNAL
 	void catchmmapints P((void));
 	void readAccessFilenameBuffer P((char const*,unsigned char const*));
 #   else
 #	define catchmmapints()
 #   endif
 #endif
-#if has_getuid
+#if HAVE_GETUID
 	uid_t ruid P((void));
 #	define myself(u) ((u) == ruid())
 #else
 #	define myself(u) true
 #endif
-#if has_setuid
+#if HAVE_SETUID
 	uid_t euid P((void));
 	void nosetid P((void));
 	void seteid P((void));

@@ -26,23 +26,7 @@ Report problems and direct all questions to:
 
 */
 
-#if has_conf_h
-#	include "conf.h"
-#else
-#	ifdef __STDC__
-#		define P(x) x
-#	else
-#		define const
-#		define P(x) ()
-#	endif
-#	include <limits.h>
-#	include <time.h>
-#endif
-
-#include <ctype.h>
-#undef isdigit
-#define isdigit(c) (((unsigned)(c)-'0') <= 9) /* faster than stock */
-
+#include "rcsbase.h"
 #include "partime.h"
 
 char const partimeId[]

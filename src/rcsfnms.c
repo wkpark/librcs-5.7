@@ -257,7 +257,7 @@ static struct compair const comtable[] = {
 	{ 0	, "# "	}	/* default for unknown suffix; must be last */
 };
 
-#if has_mktemp
+#if HAVE_MKTEMP
 static char	tmppath[1024];
 
 	static void
@@ -323,7 +323,7 @@ maketemp(n)
 {
 	char *p;
 	char const *t = tpnames[n];
-#	if has_mktemp
+#	if HAVE_MKTEMP
 	int fd;
 #	endif
 
@@ -332,7 +332,7 @@ maketemp(n)
 
 	catchints();
 	{
-#	if has_mktemp
+#	if HAVE_MKTEMP
 	    char const *tp = tmp();
             if (tp == NULL) {
                 // Unable to create temp directory
@@ -881,7 +881,7 @@ getfullRCSname()
 			same_file(PWDstat, dotstat, 1)
 		    )) {
 			bufalloc(&wdbuf, SIZEABLE_PATH + 1);
-#			if has_getcwd || !has_getwd
+#			if HAVE_GETCWD || !HAVE_GETWD
 			    while (!(d = getcwd(wdbuf.string, wdbuf.size)))
 				if (errno == ERANGE)
 				    bufalloc(&wdbuf, wdbuf.size<<1);
@@ -931,11 +931,11 @@ dir_useful_len(d)
 * but some non-Posix systems misbehave unless the slashes are omitted.
 */
 {
-#	ifndef SLASHSLASH_is_SLASH
-#	define SLASHSLASH_is_SLASH 0
+#	ifndef SLASHSLASH_IS_SLASH
+#	define SLASHSLASH_IS_SLASH 0
 #	endif
 	size_t dlen = strlen(d);
-	if (!SLASHSLASH_is_SLASH && dlen==2 && isSLASH(d[0]) && isSLASH(d[1]))
+	if (!SLASHSLASH_IS_SLASH && dlen==2 && isSLASH(d[0]) && isSLASH(d[1]))
 	    --dlen;
 	else
 	    while (dlen && isSLASH(d[dlen-1]))
@@ -958,7 +958,7 @@ isSLASH(c)
 #endif
 
 
-#if !has_getcwd && !has_getwd
+#if !HAVE_GETCWD && !HAVE_GETWD
 
 	char *
 getcwd(path, size)
@@ -980,7 +980,7 @@ getcwd(path, size)
 	}
 	if (pipe(fd) != 0)
 		return 0;
-#	if bad_wait_if_SIGCHLD_ignored
+#	if BAD_WAIT_IF_SIGCHLD_IGNORED
 #		ifndef SIGCHLD
 #		define SIGCHLD SIGCLD
 #		endif
@@ -1033,7 +1033,7 @@ getcwd(path, size)
 				}
 			}
 		}
-#		if has_waitpid
+#		if HAVE_WAITPID
 			if (waitpid(child, &wstatus, 0) < 0)
 				wstatus = 1;
 #		else

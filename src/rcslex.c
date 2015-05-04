@@ -534,7 +534,7 @@ getphrases(key)
     struct cbuf r;
     register RILE *fin;
     register FILE *frew;
-#   if large_memory
+#   if LARGE_MEMORY
 #	define savech_(c) ;
 #   else
 	register char *p;
@@ -550,7 +550,7 @@ getphrases(key)
 	fin = finptr;
 	frew = foutptr;
 	setupcache(fin); cache(fin);
-#	if large_memory
+#	if LARGE_MEMORY
 	    r.string = (char const*)cacheptr() - strlen(NextString) - 1;
 #	else
 	    bufautobegin(&b);
@@ -606,7 +606,7 @@ getphrases(key)
 			    savech_(c)
 			    cacheget_(c)
 			}
-#			if large_memory
+#			if LARGE_MEMORY
 			    r.size = (char const*)cacheptr() - 1 - r.string;
 #			endif
 			for (;;) {
@@ -643,7 +643,7 @@ getphrases(key)
 				uncache(fin);
 				goto returnit;
 			}
-#		    if !large_memory
+#		    if !LARGE_MEMORY
 			{
 			    register char const *ki;
 			    for (ki=key; ki<kn; )
@@ -658,7 +658,7 @@ getphrases(key)
 	    }
 	}
     returnit:;
-#	if !large_memory
+#	if !LARGE_MEMORY
 	    return bufremember(&b, (size_t)(p - b.string));
 #	endif
     }
@@ -864,10 +864,10 @@ checkssym(sym)
 }
 
 
-#if !large_memory
+#if !LARGE_MEMORY
 #   define Iclose(f) fclose(f)
 #else
-# if !maps_memory
+# if !MAPS_MEMORY
     static int Iclose P((RILE *));
 	static int
     Iclose(f)
@@ -888,7 +888,7 @@ checkssym(sym)
 	return close(f->fd);
     }
 
-#   if has_map_fd
+#   if HAVE_MAP_FD
 	static void map_fd_deallocate P((RILE *));
 	    static void
 	map_fd_deallocate(f)
@@ -902,7 +902,7 @@ checkssym(sym)
 		efaterror("vm_deallocate");
 	}
 #   endif
-#   if has_mmap
+#   ifdef HAVE_MMAP
 	static void mmap_deallocate P((RILE *));
 	    static void
 	mmap_deallocate(f)
@@ -930,7 +930,7 @@ checkssym(sym)
 #endif
 
 
-#if large_memory && maps_memory
+#if LARGE_MEMORY && MAPS_MEMORY
 	static RILE *fd2_RILE P((int,char const*,struct stat*));
 	static RILE *
 fd2_RILE(fd, name, status)
@@ -957,13 +957,13 @@ fd2RILE(fd, name, type, status)
 		return 0;
 	} else {
 
-#	    if !(large_memory && maps_memory)
+#	    if !(LARGE_MEMORY && MAPS_MEMORY)
 		FILE *stream;
 		if (!(stream = fdopen(fd, type)))
 			efaterror(name);
 #	    endif
 
-#	    if !large_memory
+#	    if !LARGE_MEMORY
 		return stream;
 #	    else
 #		define RILES 3
@@ -978,7 +978,7 @@ fd2RILE(fd, name, type, status)
 		for (f = rilebuf;  f->base;  f++)
 			if (f == rilebuf+RILES)
 				faterror("too many RILEs");
-#		if maps_memory
+#		if MAPS_MEMORY
 			f->deallocate = nothing_to_deallocate;
 #		endif
 		if (!s) {
@@ -986,14 +986,14 @@ fd2RILE(fd, name, type, status)
 		    f->base[0] = 0; /* it will be free()ed later */
 		} else {
 		    f->base = 0;
-#		    if has_map_fd
+#		    if HAVE_MAP_FD
 			map_fd(
 				fd, (vm_offset_t)0, (vm_address_t*) &f->base,
 				TRUE, (vm_size_t)s
 			);
 			f->deallocate = map_fd_deallocate;
 #		    endif
-#		    if has_mmap
+#		    if HAVE_MMAP
 			if (!f->base) {
 			    catchmmapints();
 			    f->base = (unsigned char *) mmap(
@@ -1006,7 +1006,7 @@ fd2RILE(fd, name, type, status)
 			    if (f->base == (unsigned char *) MAP_FAILED)
 				f->base = 0;
 			    else {
-#				if has_NFS && mmap_signal
+#				if USE_NFS && MMAP_SIGNAL
 				    /*
 				    * On many hosts, the superuser
 				    * can mmap an NFS file it can't read.
@@ -1021,7 +1021,7 @@ fd2RILE(fd, name, type, status)
 #		    endif
 		    if (!f->base) {
 			f->base = tnalloc(unsigned char, s);
-#			if maps_memory
+#			if MAPS_MEMORY
 			{
 			    /*
 			    * We can't map the file into memory for some reason.
@@ -1058,7 +1058,7 @@ fd2RILE(fd, name, type, status)
 		f->ptr = f->base;
 		f->lim = f->base + s;
 		f->fd = fd;
-#		if !maps_memory
+#		if !MAPS_MEMORY
 		    f->readlim = f->base;
 		    f->stream = stream;
 #		endif
@@ -1069,7 +1069,7 @@ fd2RILE(fd, name, type, status)
 	}
 }
 
-#if !maps_memory && large_memory
+#if !MAPS_MEMORY && LARGE_MEMORY
 	int
 Igetmore(f)
 	register RILE *f;
@@ -1089,7 +1089,7 @@ Igetmore(f)
 }
 #endif
 
-#if has_madvise && has_mmap && large_memory
+#if HAVE_MADVISE && HAVE_MMAP && LARGE_MEMORY
 	void
 advise_access(f, advice)
 	register RILE *f;
@@ -1102,7 +1102,7 @@ advise_access(f, advice)
 #endif
 
 	RILE *
-#if large_memory && maps_memory
+#if LARGE_MEMORY && MAPS_MEMORY
 I_open(name, status)
 #else
 Iopen(name, type, status)
@@ -1120,7 +1120,7 @@ Iopen(name, type, status)
 
 	if (fd < 0)
 		return 0;
-#	if large_memory && maps_memory
+#	if LARGE_MEMORY && MAPS_MEMORY
 		return fd2_RILE(fd, name, status);
 #	else
 		return fd2RILE(fd, name, type, status);
@@ -1151,7 +1151,7 @@ void Ofclose(f) FILE *f; { if (f && fclose(f)!=0) Oerror(); }
 void Izclose(p) RILE **p; { Ifclose(*p); *p = 0; }
 void Ozclose(p) FILE **p; { Ofclose(*p); *p = 0; }
 
-#if !large_memory
+#if !LARGE_MEMORY
 	void
 testIeof(f)
 	FILE *f;
@@ -1240,7 +1240,7 @@ enfaterror(e,s)
 	fatcleanup(true);
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 error(char const *format,...)
 #else
@@ -1257,7 +1257,7 @@ error(char const *format,...)
 	eflush();
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 rcserror(char const *format,...)
 #else
@@ -1274,7 +1274,7 @@ rcserror(char const *format,...)
 	eflush();
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 workerror(char const *format,...)
 #else
@@ -1291,7 +1291,7 @@ workerror(char const *format,...)
 	eflush();
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 fatserror(char const *format,...)
 #else
@@ -1309,7 +1309,7 @@ fatserror(char const *format,...)
 	fatcleanup(false);
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 faterror(char const *format,...)
 #else
@@ -1326,7 +1326,7 @@ faterror(char const *format,...)
 	fatcleanup(false);
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 rcsfaterror(char const *format,...)
 #else
@@ -1343,7 +1343,7 @@ rcsfaterror(char const *format,...)
 	fatcleanup(false);
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 warn(char const *format,...)
 #else
@@ -1362,7 +1362,7 @@ warn(char const *format,...)
 	}
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 rcswarn(char const *format,...)
 #else
@@ -1381,7 +1381,7 @@ rcswarn(char const *format,...)
 	}
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 workwarn(char const *format,...)
 #else
@@ -1407,7 +1407,7 @@ redefined(c)
 	warn("redefinition of -%c option", c);
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 diagnose(char const *format,...)
 #else
@@ -1447,7 +1447,7 @@ aputs(s, iop)
 /* Function: Put string s on file iop, abort on error.
  */
 {
-#if has_fputs
+#if HAVE_FPUTS
 	if (fputs(s, iop) < 0)
 		Oerror();
 #else
@@ -1458,21 +1458,21 @@ aputs(s, iop)
 
 
 	void
-#if has_prototypes
+#if PROTOTYPES
 fvfprintf(FILE *stream, char const *format, va_list args)
 #else
 	fvfprintf(stream,format,args) FILE *stream; char *format; va_list args;
 #endif
 /* like vfprintf, except abort program on error */
 {
-#if has_vfprintf
+#if HAVE_VFPRINTF
 	if (vfprintf(stream, format, args) < 0)
 		Oerror();
 #else
-#	if has__doprintf
+#	if HAVE__DOPRINTF
 		_doprintf(stream, format, args);
 #	else
-#	if has__doprnt
+#	if HAVE__DOPRNT
 		_doprnt(format, args, stream);
 #	else
 		int *a = (int *)args;
@@ -1487,7 +1487,7 @@ fvfprintf(FILE *stream, char const *format, va_list args)
 #endif
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	void
 aprintf(FILE *iop, char const *fmt, ...)
 #else

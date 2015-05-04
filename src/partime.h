@@ -61,7 +61,7 @@ struct partime {
 	long zone;
 };
 
-#if defined(__STDC__) || has_prototypes
+#if defined(__STDC__) || PROTOTYPES
 #	define __PARTIME_P(x) x
 #else
 #	define __PARTIME_P(x) ()

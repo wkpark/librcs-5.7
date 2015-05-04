@@ -189,7 +189,7 @@ Report problems and direct all questions to:
 
 libId(utilId, "$Id: rcsutil.c,v 5.20 1995/06/16 06:19:24 eggert Exp $")
 
-#if !has_memcmp
+#if !HAVE_MEMCMP
 	int
 memcmp(s1, s2, n)
 	void const *s1, *s2;
@@ -206,7 +206,7 @@ memcmp(s1, s2, n)
 }
 #endif
 
-#if !has_memcpy
+#if !HAVE_MEMCPY
 	void *
 memcpy(s1, s2, n)
 	void *s1;
@@ -363,7 +363,7 @@ getusername(suspicious)
 			)
 #		    endif
 		) {
-#if has_getuid && has_getpwuid
+#if HAVE_GETUID && HAVE_GETPWUID
 			struct passwd const *pw = getpwuid(ruid());
 			if (!pw)
 			    faterror("no password entry for userid %lu",
@@ -371,7 +371,7 @@ getusername(suspicious)
 			    );
 			name = pw->pw_name;
 #else
-#if has_setuid
+#if HAVE_SETUID
 			faterror("setuid not supported");
 #else
 			faterror("Who are you?  Please setenv LOGNAME.");
@@ -386,7 +386,7 @@ getusername(suspicious)
 
 
 
-#if has_signal
+#if HAVE_SIGNAL
 
 /*
  *	 Signal handling
@@ -404,7 +404,7 @@ static sig_atomic_t volatile heldsignal, holdlevel;
 #endif
 
 
-#if has_NFS && has_mmap && large_memory && mmap_signal
+#if USE_NFS && HAVE_MMAP && LARGE_MEMORY && MMAP_SIGNAL
     static char const *accessName;
 
 	  void
@@ -422,7 +422,7 @@ static sig_atomic_t volatile heldsignal, holdlevel;
 #endif
 
 
-#if !has_psignal
+#if !HAVE_PSIGNAL
 
 # define psignal my_psignal
 	static void my_psignal P((int,char const*));
@@ -432,7 +432,7 @@ my_psignal(sig, s)
 	char const *s;
 {
 	char const *sname = "Unknown signal";
-#	if has_sys_siglist && defined(NSIG)
+#	if HAVE_SYS_SIGLIST && defined(NSIG)
 	    if ((unsigned)sig < NSIG)
 		sname = sys_siglist[sig];
 #	else
@@ -458,11 +458,11 @@ my_psignal(sig, s)
 #	       ifdef SIGXFSZ
 		case SIGXFSZ:	sname = "Filesize limit exceeded";  break;
 #	       endif
-#	      if has_mmap && large_memory
-#	       if defined(SIGBUS) && mmap_signal==SIGBUS
+#	      if HAVE_MMAP && LARGE_MEMORY
+#	       if defined(SIGBUS) && MMAP_SIGNAL==SIGBUS
 		case SIGBUS:	sname = "Bus error";  break;
 #	       endif
-#	       if defined(SIGSEGV) && mmap_signal==SIGSEGV
+#	       if defined(SIGSEGV) && MMAP_SIGNAL==SIGSEGV
 		case SIGSEGV:	sname = "Segmentation fault";  break;
 #	       endif
 #	      endif
@@ -504,7 +504,7 @@ catchsigaction(s, i, c)
 	void *c;
 #endif
 {
-#   if sig_zaps_handler
+#   if SIG_ZAPS_HANDLER
 	/* If a signal arrives before we reset the handler, we lose. */
 	VOID signal(s, SIG_IGN);
 #   endif
@@ -533,21 +533,21 @@ catchsigaction(s, i, c)
 	char buf[BUFSIZ], *b = buf;
 
 	if ( !	(
-#		if has_mmap && large_memory && mmap_signal
+#		if HAVE_MMAP && LARGE_MEMORY && MMAP_SIGNAL
 			/* Check whether this signal was planned.  */
-			s == mmap_signal && accessName
+			s == MMAP_SIGNAL && accessName
 #		else
 			0
 #		endif
 	)) {
 	    char const *nRCS = "\nRCS";
-#	    if defined(SA_SIGINFO) && has_si_errno && has_mmap && large_memory && mmap_signal
-		if (s == mmap_signal  &&  i  &&  i->si_errno) {
+#	    if defined(SA_SIGINFO) && HAVE_SI_ERRNO && HAVE_MMAP && LARGE_MEMORY && MMAP_SIGNAL
+		if (s == MMAP_SIGNAL  &&  i  &&  i->si_errno) {
 		    errno = i->si_errno;
 		    perror(nRCS++);
 		}
 #	    endif
-#	    if defined(SA_SIGINFO) && has_psiginfo
+#	    if defined(SA_SIGINFO) && HAVE_PSIGINFO
 		if (i)
 		    psiginfo(i, nRCS);
 		else
@@ -559,8 +559,8 @@ catchsigaction(s, i, c)
 
 	for (p = "RCS: ";  *p;  *b++ = *p++)
 	    continue;
-#	if has_mmap && large_memory && mmap_signal
-	    if (s == mmap_signal) {
+#	if HAVE_MMAP && LARGE_MEMORY && MMAP_SIGNAL
+	    if (s == MMAP_SIGNAL) {
 		p = accessName;
 		if (!p)
 		    p = "Was a file changed by some other process?  ";
@@ -604,7 +604,7 @@ restoreints()
 
 static void setup_catchsig P((int const*,int));
 
-#if has_sigaction
+#if HAVE_SIGACTION
 
 	static void check_sig P((int));
 	static void
@@ -629,7 +629,7 @@ static void setup_catchsig P((int const*,int));
 		act.sa_handler = catchsig;
 #		ifdef SA_SIGINFO
 		    if (!unsupported_SA_SIGINFO) {
-#			if has_sa_sigaction
+#			if HAVE_STRUCT_SIGACTION_SA_SIGACTION
 			    act.sa_sigaction = catchsigaction;
 #			else
 			    act.sa_handler = catchsigaction;
@@ -655,7 +655,7 @@ static void setup_catchsig P((int const*,int));
   }
 
 #else
-#if has_sigblock
+#if HAVE_SIGBLOCK
 
 	static void
   setup_catchsig(sig, sigs)
@@ -733,7 +733,7 @@ catchints()
 	}
 }
 
-#if has_mmap && large_memory && mmap_signal
+#if HAVE_MMAP && LARGE_MEMORY && MMAP_SIGNAL
 
     /*
     * If you mmap an NFS file, and someone on another client removes the last
@@ -747,7 +747,7 @@ catchints()
     * This can also occur if someone truncates the file, even without NFS.
     */
 
-    static int const mmapsigs[] = { mmap_signal };
+    static int const mmapsigs[] = { MMAP_SIGNAL };
 
 	    void
     catchmmapints()
@@ -760,7 +760,7 @@ catchints()
     }
 #endif
 
-#endif /* has_signal */
+#endif /* HAVE_SIGNAL */
 
 
 	void
@@ -770,8 +770,8 @@ fastcopy(inf,outf)
 /* Function: copies the remainder of file inf to outf.
  */
 {
-#if large_memory
-#	if maps_memory
+#if LARGE_MEMORY
+#	if MAPS_MEMORY
 	    awrite((char const*)inf->ptr, (size_t)(inf->lim - inf->ptr), outf);
 	    inf->ptr = inf->lim;
 #	else
@@ -894,7 +894,7 @@ fopenSafer(filename, type)
 #endif
 
 
-#if has_fork || has_spawn
+#if HAVE_FORK || HAVE_SPAWN
 
 	static int movefd P((int,int));
 	static int
@@ -921,14 +921,14 @@ fdreopen(fd, file, flags)
 	int newfd;
 	VOID close(fd);
 	newfd =
-#if !open_can_creat
+#if !OPEN_CAN_CREAT
 		flags&O_CREAT ? creat(file, S_IRUSR|S_IWUSR) :
 #endif
 		open(file, flags, S_IRUSR|S_IWUSR);
 	return movefd(newfd, fd);
 }
 
-#if has_spawn
+#if HAVE_SPAWN
 	static void redirect P((int,int));
 	static void
 redirect(old, new)
@@ -945,7 +945,7 @@ redirect(old, new)
 #endif
 
 
-#else /* !has_fork && !has_spawn */
+#else /* !HAVE_FORK && !HAVE_SPAWN */
 
 	static void bufargcat P((struct buf*,int,char const*));
 	static void
@@ -980,7 +980,7 @@ bufargcat(b, c, s)
 
 #endif
 
-#if !has_spawn && has_fork
+#if !HAVE_SPAWN && HAVE_FORK
 /*
 * Output the string S to stderr, without touching any I/O buffers.
 * This is useful if you are a child process, whose buffers are usually wrong.
@@ -1010,7 +1010,7 @@ runv(infd, outname, args)
 {
 	int wstatus;
 
-#if bad_wait_if_SIGCHLD_ignored
+#if BAD_WAIT_IF_SIGCHLD_IGNORED
 	static int fixed_SIGCHLD;
 	if (!fixed_SIGCHLD) {
 	    fixed_SIGCHLD = true;
@@ -1024,7 +1024,7 @@ runv(infd, outname, args)
 	oflush();
 	eflush();
     {
-#if has_spawn
+#if HAVE_SPAWN
 	int in, out;
 	char const *file;
 
@@ -1074,7 +1074,7 @@ runv(infd, outname, args)
 	redirect(in, STDIN_FILENO);
 	redirect(out, STDOUT_FILENO);
 #else
-#if has_fork
+#if HAVE_FORK
 	pid_t pid;
 	if (!(pid = vfork())) {
 		char const *notfound;
@@ -1120,7 +1120,7 @@ runv(infd, outname, args)
 	}
 	if (pid < 0)
 		efaterror("fork");
-#	if has_waitpid
+#	if HAVE_WAITPID
 		if (waitpid(pid, &wstatus, 0) < 0)
 			efaterror("waitpid");
 #	else
@@ -1170,7 +1170,7 @@ runv(infd, outname, args)
 * The remaining arguments specify the command and its arguments.
 */
 	int
-#if has_prototypes
+#if PROTOTYPES
 run(int infd, char const *outname, ...)
 #else
 	/*VARARGS2*/
@@ -1309,15 +1309,15 @@ getRCSINIT(argc, argv, newargv)
 
 #define cacheid(E) static uid_t i; static int s; if (!s){ s=1; i=(E); } return i
 
-#if has_getuid
+#if HAVE_GETUID
 	uid_t ruid() { cacheid(getuid()); }
 #endif
-#if has_setuid
+#if HAVE_SETUID
 	uid_t euid() { cacheid(geteuid()); }
 #endif
 
 
-#if has_setuid
+#if HAVE_SETUID
 
 /*
  * Setuid execution really works only with Posix 1003.1a Draft 5 seteuid(),
@@ -1329,7 +1329,7 @@ getRCSINIT(argc, argv, newargv)
  */
 
 	static void
-#if has_prototypes
+#if PROTOTYPES
 set_uid_to(uid_t u)
 #else
  set_uid_to(u) uid_t u;
@@ -1340,8 +1340,8 @@ set_uid_to(uid_t u)
 
 	if (euid() == ruid())
 		return;
-#if (has_fork||has_spawn) && DIFF_ABSOLUTE
-#	if has_setreuid
+#if (HAVE_FORK||HAVE_SPAWN) && DIFF_ABSOLUTE
+#	if HAVE_SETREUID
 		if (setreuid(u==euid() ? ruid() : euid(), u) != 0)
 			efaterror("setuid");
 #	else

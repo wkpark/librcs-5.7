@@ -28,7 +28,7 @@ Report problems and direct all questions to:
 
 #include "rcsbase.h"
 
-#if has_dirent
+#if HAVE_DIRENT
 	static int get_directory P((char const*,char***));
 #endif
 
@@ -70,7 +70,7 @@ mainProg(rcsclean, "$Id: rcsclean.c,v 5.9 1995/06/16 06:19:24 eggert Exp $")
 	argv = newargv;
 	for (;;) {
 		if (--argc < 1) {
-#			if has_dirent
+#			if HAVE_DIRENT
 				argc = get_directory(".", &newargv);
 				argv = newargv;
 				break;
@@ -283,7 +283,7 @@ unlock(delta)
 	return false;
 }
 
-#if has_dirent
+#if HAVE_DIRENT
 	static int
 get_directory(dirname, aargv)
 	char const *dirname;
@@ -320,7 +320,7 @@ get_directory(dirname, aargv)
 		VOID strcpy(a+chars, en);
 		chars += s;
 	}
-#	if void_closedir
+#	if CLOSEDIR_VOID
 #		define close_directory(d) (closedir(d), 0)
 #	else
 #		define close_directory(d) closedir(d)

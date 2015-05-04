@@ -460,7 +460,7 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 	switch (pairnames(argc, argv, rcswriteopen, mustread, false)) {
 
         case -1:                /* New RCS file */
-#		if has_setuid && has_getuid
+#		if HAVE_SETUID && HAVE_GETUID
 		    if (euid() != ruid()) {
 			workerror("setuid initial checkin prohibited; use `rcs -i -a' first");
 			continue;
@@ -647,7 +647,7 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 			* Also, Posix 1003.1b-1993 sec 5.6.7.2 p 128 l 1022
 			* says ftruncate might fail because it's not supported.
 			*/
-#			if !has_ftruncate
+#			if !HAVE_FTRUNCATE
 #			    undef ftruncate
 #			    define ftruncate(fd,length) (-1)
 #			endif
@@ -682,11 +682,11 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 		    int wfd = Ifileno(workptr);
 		    struct stat checkworkstat;
 		    char const *diffv[6 + !!OPEN_O_BINARY], **diffp;
-#		    if large_memory && !maps_memory
+#		    if LARGE_MEMORY && !MAPS_MEMORY
 			FILE *wfile = workptr->stream;
 			long wfile_off;
 #		    endif
-#		    if !has_fflush_input && !(large_memory && maps_memory)
+#		    if !HAVE_FFLUSH_INPUT && !(LARGE_MEMORY && MAPS_MEMORY)
 		        off_t wfd_off;
 #		    endif
 
@@ -694,25 +694,25 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 			newdelta.num, targetdelta->num
 		    );
 		    newdelta.log = getlogmsg();
-#		    if !large_memory
+#		    if !LARGE_MEMORY
 			Irewind(workptr);
-#			if has_fflush_input
+#			if HAVE_FFLUSH_INPUT
 			    if (fflush(workptr) != 0)
 				Ierror();
 #			endif
 #		    else
-#			if !maps_memory
+#			if !MAPS_MEMORY
 			    if (
 			    	(wfile_off = ftell(wfile)) == -1
 			     ||	fseek(wfile, 0L, SEEK_SET) != 0
-#			     if has_fflush_input
+#			     if HAVE_FFLUSH_INPUT
 			     ||	fflush(wfile) != 0
 #			     endif
 			    )
 				Ierror();
 #			endif
 #		    endif
-#		    if !has_fflush_input && !(large_memory && maps_memory)
+#		    if !HAVE_FFLUSH_INPUT && !(LARGE_MEMORY && MAPS_MEMORY)
 			wfd_off = lseek(wfd, (off_t)0, SEEK_CUR);
 			if (wfd_off == -1
 			    || (wfd_off != 0
@@ -733,11 +733,11 @@ mainProg(ci, "$Id: ci.c,v 5.30 1995/06/16 06:19:24 eggert Exp $")
 			case DIFF_FAILURE: case DIFF_SUCCESS: break;
 			default: rcsfaterror("diff failed");
 		    }
-#		    if !has_fflush_input && !(large_memory && maps_memory)
+#		    if !HAVE_FFLUSH_INPUT && !(LARGE_MEMORY && MAPS_MEMORY)
 			if (lseek(wfd, wfd_off, SEEK_CUR) == -1)
 			    Ierror();
 #		    endif
-#		    if large_memory && !maps_memory
+#		    if LARGE_MEMORY && !MAPS_MEMORY
 			if (fseek(wfile, wfile_off, SEEK_SET) != 0)
 			    Ierror();
 #		    endif
@@ -1180,9 +1180,9 @@ getcurdate()
 }
 
 	static int
-#if has_prototypes
+#if PROTOTYPES
 fixwork(mode_t newworkmode, time_t mtime)
-  /* The `#if has_prototypes' is needed because mode_t might promote to int.  */
+  /* The `#if PROTOTYPES' is needed because mode_t might promote to int.  */
 #else
   fixwork(newworkmode, mtime)
 	mode_t newworkmode;
@@ -1195,10 +1195,10 @@ fixwork(mode_t newworkmode, time_t mtime)
 		    ||	setmtime(workname, mtime) != 0
 		?   -1
 	    :	workstat.st_mode == newworkmode  ?  0
-#if has_fchmod
+#if HAVE_FCHMOD
 	    :	fchmod(Ifileno(workptr), newworkmode) == 0  ?  0
 #endif
-#if bad_chmod_close
+#if BAD_CHMOD_CLOSE
 	    :	-1
 #else
 	    :	chmod(workname, newworkmode)

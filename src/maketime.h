@@ -26,7 +26,7 @@ Report problems and direct all questions to:
 
 */
 
-#if defined(__STDC__) || has_prototypes
+#if defined(__STDC__) || PROTOTYPES
 #	define __MAKETIME_P(x) x
 #else
 #	define __MAKETIME_P(x) ()

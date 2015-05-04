@@ -212,7 +212,7 @@ static void keyreplace P((enum markers,struct hshentry const*,int,RILE*,FILE*,in
 FILE *fcopy;		 /* result file descriptor			    */
 char const *resultname;	 /* result pathname				    */
 int locker_expansion;	 /* should the locker name be appended to Id val?   */
-#if !large_memory
+#if !LARGE_MEMORY
 	static RILE *fedit; /* edit file descriptor */
 	static char const *editname; /* edit pathname */
 #endif
@@ -223,7 +223,7 @@ static long linecorr; /* #adds - #deletes in each edit run.		    */
 
 /* indexes into dirtpname */
 #define lockdirtp_index 0
-#define newRCSdirtp_index bad_creat0
+#define newRCSdirtp_index BAD_CREAT0
 #define newworkdirtp_index (newRCSdirtp_index+1)
 #define DIRTEMPNAMES (newworkdirtp_index + 1)
 
@@ -234,7 +234,7 @@ static enum maker volatile dirtpmaker[DIRTEMPNAMES];	/* if these are set */
 #define newRCSname (dirtpname[newRCSdirtp_index].string)
 
 
-#if has_NFS || bad_unlink
+#if USE_NFS || BAD_UNLINK
 	int
 un_link(s)
 	char const *s;
@@ -243,7 +243,7 @@ un_link(s)
  * Ignore unlink() ENOENT failures; NFS generates bogus ones.
  */
 {
-#	if bad_unlink
+#	if BAD_UNLINK
 		if (unlink(s) == 0)
 			return 0;
 		else {
@@ -259,7 +259,7 @@ un_link(s)
 			}
 		}
 #	endif
-#	if has_NFS
+#	if USE_NFS
 		return unlink(s)==0 || errno==ENOENT  ?  0  :  -1;
 #	else
 		return unlink(s);
@@ -267,8 +267,8 @@ un_link(s)
 }
 #endif
 
-#if !has_rename
-#  if !has_NFS
+#if !HAVE_RENAME
+#  if !USE_NFS
 #	define do_link(s,t) link(s,t)
 #  else
 	static int do_link P((char const*,char const*));
@@ -308,9 +308,9 @@ editLineNumberOverflow()
 }
 
 
-#if large_memory
+#if LARGE_MEMORY
 
-#if has_memmove
+#if HAVE_MEMMOVE
 #	define movelines(s1, s2, n) VOID memmove(s1, s2, (n)*sizeof(Iptr_type))
 #else
 	static void movelines P((Iptr_type*,Iptr_type const*,long));
@@ -461,13 +461,13 @@ finishedit(delta, outfile, done)
 
 /* Open a temporary NAME for output, truncating any previous contents.  */
 #   define fopen_update_truncate(name) fopenSafer(name, FOPEN_W_WORK)
-#else /* !large_memory */
+#else /* !LARGE_MEMORY */
     static FILE * fopen_update_truncate P((char const*));
     static FILE *
 fopen_update_truncate(name)
     char const *name;
 {
-	if (bad_fopen_wplus  &&  un_link(name) != 0)
+	if (BAD_FOPEN_WPLUS &&  un_link(name) != 0)
 		efaterror(name);
 	return fopenSafer(name, FOPEN_WPLUS_WORK);
 }
@@ -489,7 +489,7 @@ openfcopy(f)
 }
 
 
-#if !large_memory
+#if !LARGE_MEMORY
 
 	static void swapeditfiles P((FILE*));
 	static void
@@ -550,7 +550,7 @@ finishedit(delta, outfile, done)
 
 
 
-#if large_memory
+#if LARGE_MEMORY
 #	define copylines(upto,delta) (editline = (upto))
 #else
 	static void copylines P((long,struct hshentry const*));
@@ -661,7 +661,7 @@ copystring()
 enterstring()
 /* Like copystring, except the string is put into the edit data structure.  */
 {
-#if !large_memory
+#if !LARGE_MEMORY
 	editname = 0;
 	fedit = 0;
 	editline = linecorr = 0;
@@ -724,7 +724,7 @@ enterstring()
 
 
 	void
-#if large_memory
+#if LARGE_MEMORY
 edit_string()
 #else
   editstring(delta)
@@ -732,7 +732,7 @@ edit_string()
 #endif
 /*
  * Read an edit script from finptr and applies it to the edit file.
-#if !large_memory
+#if !LARGE_MEMORY
  * The result is written to fcopy.
  * If delta, keyword expansion is performed simultaneously.
  * If running out of lines in fedit, fedit and fcopy are swapped.
@@ -749,14 +749,14 @@ edit_string()
         register int c;
 	declarecache;
 	register FILE *frew;
-#	if !large_memory
+#	if !LARGE_MEMORY
 		register FILE *f;
 		long line_lim = LONG_MAX;
 		register RILE *fe;
 #	endif
 	register long i;
 	register RILE *fin;
-#	if large_memory
+#	if LARGE_MEMORY
 		register long j;
 #	endif
 	struct diffcmd dc;
@@ -767,7 +767,7 @@ edit_string()
 	setupcache(fin);
 	initdiffcmd(&dc);
 	while (0  <=  (ed = getdiffcmd(fin,true,frew,&dc)))
-#if !large_memory
+#if !LARGE_MEMORY
 		if (line_lim <= dc.line1)
 			editLineNumberOverflow();
 		else
@@ -778,7 +778,7 @@ edit_string()
 			i = dc.nlines;
 			linecorr -= i;
 			editline += i;
-#			if large_memory
+#			if LARGE_MEMORY
 			    deletelines(editline+linecorr, i);
 #			else
 			    fe = fedit;
@@ -793,11 +793,11 @@ edit_string()
 			/* Copy lines without deleting any.  */
 			copylines(dc.line1, delta);
 			i = dc.nlines;
-#			if large_memory
+#			if LARGE_MEMORY
 				j = editline+linecorr;
 #			endif
 			linecorr += i;
-#if !large_memory
+#if !LARGE_MEMORY
 			f = fcopy;
 			if (delta)
 			    do {
@@ -815,7 +815,7 @@ edit_string()
 			{
 			    cache(fin);
 			    do {
-#				if large_memory
+#				if LARGE_MEMORY
 				    insertline(j++, cacheptr());
 #				endif
 				for (;;) {
@@ -830,7 +830,7 @@ edit_string()
 					    return;
 					}
 				    }
-#				    if !large_memory
+#				    if !LARGE_MEMORY
 					aputc_(c, f)
 #				    endif
 				    if (c == '\n')
@@ -1235,7 +1235,7 @@ keyreplace(marker, delta, delimstuffed, infile, out, dolog)
 	}
 }
 
-#if has_readlink
+#if HAVE_READLINK
 	static int resolve_symlink P((struct buf*));
 	static int
 resolve_symlink(L)
@@ -1284,7 +1284,7 @@ resolve_symlink(L)
 	bufautoend(&bigbuf);
 	errno = e;
 	switch (e) {
-	    case readlink_isreg_errno: return 1;
+	    case READLINK_ISREG_ERRNO: return 1;
 	    case ENOENT: return 0;
 	    default: return -1;
 	}
@@ -1315,7 +1315,7 @@ rcswriteopen(RCSbuf, status, mustread)
 
 	waslocked  =  0 <= fdlock;
 	exists =
-#		if has_readlink
+#		if HAVE_READLINK
 			resolve_symlink(RCSbuf);
 #		else
 			    stat(RCSbuf->string, &statbuf) == 0  ?  1
@@ -1336,7 +1336,7 @@ rcswriteopen(RCSbuf, status, mustread)
 	bufscpy(dirt, RCSpath);
 	tp = dirt->string + l;
 	x = rcssuffix(RCSpath);
-#	if has_readlink
+#	if HAVE_READLINK
 	    if (!x) {
 		error("symbolic link to non RCS file `%s'", RCSpath);
 		errno = EINVAL;
@@ -1425,7 +1425,7 @@ rcswriteopen(RCSbuf, status, mustread)
 	* Since this problem afflicts scads of Unix programs, but is so rare
 	* that nobody seems to be worried about it, we won't worry either.
 	*/
-#	if !open_can_creat
+#	if !OPEN_CAN_CREAT
 #		define create(f) creat(f, OPEN_CREAT_READONLY)
 #	else
 #		define create(f) open(f, OPEN_O_BINARY|OPEN_O_LOCK|OPEN_O_WRONLY|O_CREAT|O_EXCL|O_TRUNC, OPEN_CREAT_READONLY)
@@ -1508,14 +1508,14 @@ makedirtemp(isworkfile)
 	register size_t dl;
 	register struct buf *bn;
 	register char const *name = isworkfile ? workname : RCSname;
-#	if has_mktemp
+#	if HAVE_MKTEMP
 	int fd;
 #	endif
 
 	dl = basefilename(name) - name;
 	bn = &dirtpname[newRCSdirtp_index + isworkfile];
 	bufalloc(bn,
-#		if has_mktemp
+#		if HAVE_MKTEMP
 			dl + 9
 #		else
 			strlen(name) + 3
@@ -1527,7 +1527,7 @@ makedirtemp(isworkfile)
 	*tp++ = '_';
 	*tp++ = '0'+isworkfile;
 	catchints();
-#	if has_mktemp
+#	if HAVE_MKTEMP
 		VOID strcpy(tp, "XXXXXX");
 		fd = mkstemp(np);
 		if (fd < 0 || !*np)
@@ -1571,12 +1571,12 @@ dirtempunlink()
 
 
 	int
-#if has_prototypes
+#if PROTOTYPES
 chnamemod(
 	FILE **fromp, char const *from, char const *to,
 	int set_mode, mode_t mode, time_t mtime
 )
-  /* The `#if has_prototypes' is needed because mode_t might promote to int.  */
+  /* The `#if PROTOTYPES' is needed because mode_t might promote to int.  */
 #else
   chnamemod(fromp, from, to, set_mode, mode, mtime)
 	FILE **fromp; char const *from,*to;
@@ -1595,17 +1595,17 @@ chnamemod(
 	mode_t mode_while_renaming = mode;
 	int fchmod_set_mode = 0;
 
-#	if bad_a_rename || bad_NFS_rename
+#	if BAD_A_RENAME || BAD_NFS_RENAME
 	    struct stat st;
-	    if (bad_NFS_rename  ||  (bad_a_rename && set_mode <= 0)) {
+	    if (BAD_NFS_RENAME  ||  (BAD_A_RENAME && set_mode <= 0)) {
 		if (fstat(fileno(*fromp), &st) != 0)
 		    return -1;
-		if (bad_a_rename && set_mode <= 0)
+		if (BAD_A_RENAME && set_mode <= 0)
 		    mode = st.st_mode;
 	    }
 #	endif
 
-#	if bad_a_rename
+#	if BAD_A_RENAME
 		/*
 		* There's a short window of inconsistency
 		* during which the lock file is writable.
@@ -1615,7 +1615,7 @@ chnamemod(
 		    set_mode = 1;
 #	endif
 
-#	if has_fchmod
+#	if HAVE_FCHMOD
 	    if (0<set_mode  &&  fchmod(fileno(*fromp),mode_while_renaming) == 0)
 		fchmod_set_mode = set_mode;
 #	endif
@@ -1627,7 +1627,7 @@ chnamemod(
 	if (setmtime(from, mtime) != 0)
 		return -1;
 
-#	if !has_rename || bad_b_rename
+#	if !HAVE_RENAME || BAD_B_RENAME
 		/*
 		* There's a short window of inconsistency
 		* during which TO does not exist.
@@ -1636,15 +1636,15 @@ chnamemod(
 			return -1;
 #	endif
 
-#	if has_rename
-	    if (rename(from,to) != 0  &&  !(has_NFS && errno==ENOENT))
+#	if HAVE_RENAME
+	    if (rename(from,to) != 0  &&  !(USE_NFS && errno==ENOENT))
 		return -1;
 #	else
 	    if (do_link(from,to) != 0  ||  un_link(from) != 0)
 		return -1;
 #	endif
 
-#	if bad_NFS_rename
+#	if BAD_NFS_RENAME
 	{
 	    /*
 	    * Check whether the rename falsely reported success.
@@ -1660,7 +1660,7 @@ chnamemod(
 	}
 #	endif
 
-#	if bad_a_rename
+#	if BAD_A_RENAME
 	    if (0 < set_mode  &&  chmod(to, mode) != 0)
 		return -1;
 #	endif
@@ -1790,7 +1790,7 @@ addsymbol(num, name, rebind)
 getcaller()
 /* Get the caller's login name.  */
 {
-#	if has_setuid
+#	if HAVE_SETUID
 		return getusername(euid()!=ruid());
 #	else
 		return getusername(false);
@@ -1844,13 +1844,13 @@ dorewrite(lockflag, changed)
 			aprintf(frewrite, "\n\n%s%c", Kdesc, nextc);
 			foutptr = frewrite;
 		} else {
-#			if bad_creat0
+#			if BAD_CREAT0
 				int nr = !!frewrite, ne = 0;
 #			endif
 			ORCSclose();
 			seteid();
 			ignoreints();
-#			if bad_creat0
+#			if BAD_CREAT0
 				if (nr) {
 					nr = un_link(newRCSname);
 					ne = errno;
@@ -1864,7 +1864,7 @@ dorewrite(lockflag, changed)
 			setrid();
 			if (r != 0)
 				enerror(e, lockname);
-#			if bad_creat0
+#			if BAD_CREAT0
 				if (nr != 0) {
 					enerror(ne, newRCSname);
 					r = -1;
@@ -1886,7 +1886,7 @@ donerewrite(changed, newRCStime)
  */
 {
 	int r = 0, e = 0;
-#	if bad_creat0
+#	if BAD_CREAT0
 		int lr, le;
 #	endif
 
@@ -1907,7 +1907,7 @@ donerewrite(changed, newRCStime)
 		);
 		e = errno;
 		keepdirtemp(newRCSname);
-#		if bad_creat0
+#		if BAD_CREAT0
 			lr = un_link(lockname);
 			le = errno;
 			keepdirtemp(lockname);
@@ -1918,7 +1918,7 @@ donerewrite(changed, newRCStime)
 			enerror(e, RCSname);
 			error("saved in %s", newRCSname);
 		}
-#		if bad_creat0
+#		if BAD_CREAT0
 			if (lr != 0) {
 				enerror(le, lockname);
 				r = -1;

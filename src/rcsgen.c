@@ -314,7 +314,7 @@ getcstdin()
 	return c;
 }
 
-#if has_prototypes
+#if PROTOTYPES
 	int
 yesorno(int default_answer, char const *question, ...)
 #else
@@ -467,7 +467,7 @@ putadmin()
 	struct access const *curaccess;
 
 	if (!(fout = frewrite)) {
-#		if bad_creat0
+#		if BAD_CREAT0
 			ORCSclose();
 			fout = fopenSafer(makedirtemp(0), FOPEN_WB);
 #		else

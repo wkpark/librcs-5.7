@@ -175,7 +175,7 @@ rcsfcmp(xfp, xstatp, uname, delta)
     xeof = ueof = false;
     if (MIN_UNEXPAND <= Expand) {
 	if (!(result = xstatp->st_size!=ustat.st_size)) {
-#	    if large_memory && maps_memory
+#	    if LARGE_MEMORY && MAPS_MEMORY
 		result = !!memcmp(xfp->base,ufp->base,(size_t)xstatp->st_size);
 #	    else
 		for (;;) {
