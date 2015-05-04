@@ -312,9 +312,9 @@ malloc_type realloc P((malloc_type,size_t));
 
 /* <fcntl.h> */
 #ifdef O_CREAT
-#       define OPEN_CAN_CRATE 1
+#       define OPEN_CAN_CREAT 1
 #else
-#       define OPEN_CAN_CRATE 0
+#       define OPEN_CAN_CREAT 0
 #endif
 
 /* Filename component separation.
