@@ -3,7 +3,60 @@
 # Copyright 1995 Paul Eggert
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(src/rcsbase.h)
+AC_PREREQ(2.68)
+AC_INIT([RCS], 5.7, [rcs-bugs@cs.purdue.edu])
+AC_CONFIG_SRCDIR([src/rcs.c])
+AC_LANG([C])
+
+AC_CONFIG_HEADER(config.h:config.hin)
+AM_INIT_AUTOMAKE([1.11.1 no-define])
+
+AC_DEFUN([RCS_CBOOL],[dnl
+dnl $1 -- C variable (actually #define) name
+dnl $2 -- sense that maps to "1" (yes, no, set, etc.)
+dnl $3 -- shell variable name to check
+dnl $4 -- description for the config header file
+AS_IF([test $2 = $[]$3],[cbool=1],[cbool=0])
+AC_DEFINE_UNQUOTED([$1],[$cbool],[$4])dnl
+])dnl
+
+AC_ISC_POSIX
+AC_MINIX
+AC_C_CONST
+AC_C_PROTOTYPES
+AC_HEADER_STDC
+AC_CHECK_HEADERS_ONCE([limits.h mach/mach.h net/error.h
+
+pwd.h signal.h siginfo.h stdarg.h varargs.h utime.h unistd.h fcntl.h stdlib.h string.h sys/file.h sys/mman.h sys/wait.h
+ucontext.h time.h sys/param.h])
+AC_HEADER_DIRENT
+AC_HEADER_STAT
+AC_HEADER_SYS_WAIT
+
+# types
+AC_TYPE_MODE_T
+AC_TYPE_OFF_T
+AC_TYPE_PID_T
+AC_TYPE_SSIZE_T
+AC_TYPE_UID_T
+AC_TYPE_SIGNAL
+AC_CHECK_FUNCS_ONCE(fchmod ftruncate getpwuid_r psiginfo dup2 memchr sigaction strchr strerror tmpnam)
+AC_CHECK_FUNCS_ONCE(getuid setuid setgid)
+AC_CHECK_FUNCS_ONCE(fputs vfprintf _doprintf _doprnt)
+AC_CHECK_FUNCS(madvise map_fd)
+AC_CHECK_FUNCS(readlink mktemp rename memmove)
+AC_CHECK_FUNCS(psignal kill)
+AC_REPLACE_FUNCS(memchr waitpid)
+
+AC_CHECK_MEMBERS([struct sigaction.sa_sigaction], , , [[#include <signal.h>]])
+
+# funcs
+AC_FUNC_ALLOCA
+AC_FUNC_CLOSEDIR_VOID
+AC_FUNC_VFORK
+AC_FUNC_VPRINTF
+AC_FUNC_MMAP
+AC_STRUCT_ST_BLKSIZE
 
 # Set up simple `diff' test.
 echo 0 >conftest0
@@ -23,6 +76,7 @@ AC_ARG_WITH(diffutils,
 
 case $with_diffutils in
 yes)
+  : ${CO='$(bindir)/co'}
   : ${DIFF='$(bindir)/diff'}
   : ${DIFF3=${DIFF}3}
   : ${DIFF3_BIN=1}
@@ -259,4 +313,436 @@ AC_PROG_CC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
-AC_OUTPUT(Makefile man/Makefile src/Makefile)
+AS_IF([test 1 = `expr "$ac_pwd" : '/*'`],[woe=no],[woe=yes])
+RCS_CBOOL([WOE],[yes],[woe],[Are we trying to "support" MS-DOS?])
+
+AC_DEFINE_UNQUOTED([CO], ["${bindir}/co"],
+	[name of 'co' program])
+
+AC_DEFINE_UNQUOTED([DIFF], ["${DIFF}"],
+	[name of 'diff' program])
+
+AC_DEFINE_UNQUOTED([DIFF3], ["${DIFF3}"],
+	[name of 'diff3' program])
+
+AC_DEFINE_UNQUOTED([DIFF3_BIN], [${DIFF3_BIN}],
+	[Is diff3 user-visible (not the /usr/lib auxiliary)?])
+
+AC_DEFINE_UNQUOTED([DIFFFLAGS], ["${DIFF3FLAGS}"],
+	[Make diff output suitable for RCS.])
+
+AC_DEFINE_UNQUOTED([DIFF_L], [${DIFF_L}],
+	[Make diff output suitable for RCS. ])
+
+AC_DEFINE([DIFF_SUCCESS], 0,
+	[DIFF status if no differences are found])
+
+AC_DEFINE([DIFF_FAILURE], 1,
+	[DIFF status if differences are found])
+
+AC_DEFINE([DIFF_TROUBLE], 2,
+	[DIFF status if trouble])
+
+AC_DEFINE_UNQUOTED([ED], ["${ED}"],
+	[name of 'ed' program (used only if !DIFF3_BIN)])
+
+AC_DEFINE_UNQUOTED([MERGE], ["${MERGE}merge"],
+	[name of 'merge' program])
+
+
+AC_CACHE_CHECK([configuring SLASHSLASH_IS_SLASH],[rcs_cv_slashslash_is_slash],[
+rcs_cv_slashslash_is_slash=0
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <sys/stat.h>
+#define same_file(s,t,d) ((s).st_ino==(t).st_ino && (s).st_dev==(t).st_dev)
+static struct stat s, ss;
+static char f[3];
+]],[[
+        f[0] = SLASH; if (stat(f, &s ) != 0) return 1;
+        f[1] = SLASH; if (stat(f, &ss) != 0) return 1;
+        return !same_file(s, ss, 0);
+]])],[rcs_cv_slashslash_is_slash=1])
+])
+
+AC_SUBST(SLASHSLASH_IS_SLASH)
+AC_DEFINE_UNQUOTED([SLASHSLASH_IS_SLASH], [${rcs_cv_slashslash_is_slash}],
+	[Are // and / the same directory?])
+
+
+AC_CACHE_CHECK([configuring has_rename, bad_a_rename, bad_b_rename],[rcs_cv_bad_a_rename],[
+rcs_cv_bad_a_rename=0
+rcs_cv_bad_b_rename=0
+AC_LANG_CONFTEST([
+AC_LANG_PROGRAM([[
+#include <stdio.h>
+]],[[
+return rename("a.a","a.b") != 0;
+]])])
+
+_AC_DO_VAR(ac_link) || exit
+# prepare
+rm -f a.b
+echo a > a.a
+
+if (./conftest$ac_exeext && test -f a.b) >&2
+then
+        h=1
+        rm -f a.a a.b &&
+        echo a > a.a && chmod -w a.a || exit
+        if ./conftest$ac_exeext && test ! -f a.a && test -f a.b
+        then a=0
+        else a=1
+        fi
+        rm -f a.a a.b &&
+        echo a > a.a && echo b > a.b && chmod -w a.b || exit
+        if ./conftest$ac_exeext && test ! -f a.a && test -f a.b
+        then b=0
+        else b=1
+        fi
+        rm -f a.a a.b || exit
+else h=0 a=0 b=0
+fi
+rcs_cv_bad_a_rename=$a
+rcs_cv_bad_b_rename=$a
+])
+
+AC_SUBST(BAD_A_RENAME)
+AC_DEFINE_UNQUOTED([BAD_A_RENAME], [${rcs_cv_bad_a_rename}],
+	[Does rename(A,B) fail if A is unwritable?])
+
+AC_SUBST(BAD_A_RENAME)
+AC_DEFINE_UNQUOTED([BAD_B_RENAME], [${rcs_cv_bad_b_rename}],
+	[Does rename(A,B) fail if B is unwritable?])
+
+# FIXME
+AC_SUBST(BAD_NFS_RENAME)
+AC_DEFINE_UNQUOTED([BAD_NFS_RENAME], [0],
+	[Can rename(A,B) falsely report success?])
+
+AC_CACHE_CHECK([configuring bad_chmod_close],[rcs_cv_bad_chmod_close],[
+rcs_cv_bad_chmod_close=0
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#ifndef O_RDONLY
+#       define O_RDONLY 0
+#endif
+]],[[
+        int f;
+        return (
+                (f = open("a.c", O_RDONLY)) < 0 ||
+                chmod("a.c", 0) != 0 ||
+                close(f) != 0
+        );
+]])], [rcs_cv_bad_chmod_close=1])
+])
+
+AC_SUBST(BAD_CHMOD_CLOSE)
+AC_DEFINE_UNQUOTED([BAD_CHMOD_CLOSE], [${rcs_cv_bad_chmod_close}],
+	[Can chmod() close file descriptors?])
+
+AC_CACHE_CHECK([configuring ALL_ABSOLUTE, DIFF_ABSOLUTE],[rcs_cv_all_absolute],[
+rcs_cv_diff_absolute=0
+rcs_cv_all_absolute=0
+AC_LANG_CONFTEST([AC_LANG_SOURCE([[
+]AC_INCLUDES_DEFAULT[
+#if !WOE
+#define SLASHes '/'
+#define ROOTPATH(p)  (isSLASH ((p)[0]))
+#else
+#define SLASHes '\\\\': case '/': case ':'
+#define ROOTPATH(p)  (isSLASH((p)[0]) || (p)[0] && (p)[1]==':')
+#endif
+
+#ifndef isSLASH
+static int
+isSLASH(c) int c; {
+        switch (c) { case SLASHes: return 1; } return 0;
+}
+#endif
+int main(int argc, char**argv) {
+        return 1 < argc && !ROOTPATH(argv[1]);
+}
+]])])
+_AC_DO_VAR(ac_link) && ./conftest$ac_exeext || exit
+a=1
+# check ALL_ABSOLUTE
+for i in "$DIFF" "$DIFF3" "$ED" "$SENDMAIL"
+do
+        case $i in
+        \"*\") i=`expr "$i" : '"\(.*\)"'`
+        esac
+        case $i in
+        ?*) ./conftest$ac_exeext "$i" || { a=0; break; }
+        esac
+done
+rcs_cv_all_absolute=$a
+
+# check DIFF_ABSOLUTE
+if ./conftest$ac_exeext "$DIFF"
+then a=1
+else a=0
+fi
+rcs_cv_diff_absolute=$a
+])
+
+AC_SUBST(ALL_ABSOLUTE)
+AC_DEFINE_UNQUOTED([ALL_ABSOLUTE], [${rcs_cv_all_absolute}],
+	[Do all subprograms satisfy ROOTPATH?])
+
+AC_SUBST(DIFF_ABSOLUTE)
+AC_DEFINE_UNQUOTED([DIFF_ABSOLUTE], [${rcs_cv_diff_absolute}],
+	[Is ROOTPATH(DIFF) true?])
+
+
+AC_SUBST(LARGE_MEMORY)
+AC_MSG_CHECKING([configuring large_memory])
+AC_CACHE_VAL(rcs_cv_large_memory, [
+  rcs_cv_large_memory=0
+  case "$ac_cv_func_map_fd$ac_cv_func_mmap_fixed_mapped" in
+  *1*) rcs_cv_large_memory=1;;
+  *) rcs_cv_large_memory=0
+  esac
+])
+LARGE_MEMORY=$rcs_cv_large_memory
+AC_MSG_RESULT($LARGE_MEMORY)
+
+AC_DEFINE_UNQUOTED([LARGE_MEMORY], [${LARGE_MEMORY}],
+	[Can main memory hold entire RCS files?])
+
+AC_CACHE_CHECK([configuring has_fflush_input],[rcs_cv_have_fflush_input],[
+rcs_cv_have_fflush_input=0
+AC_LANG_CONFTEST([
+AC_LANG_PROGRAM([[
+#include "stdio.h"
+#ifndef SEEK_SET
+#define SEEK_SET 0
+#endif
+#ifndef SEEK_CUR
+#define SEEK_CUR 1
+#endif
+#ifndef STDIN_FILENO
+#define STDIN_FILENO 0
+#endif
+]],[[
+        return (
+                getchar() == EOF
+                || fseek(stdin, 0L, SEEK_SET) != 0
+                || fflush(stdin) != 0
+                || lseek(STDIN_FILENO, (off_t)0, SEEK_CUR) != 0
+        );
+]])])
+_AC_DO_VAR(ac_link) || exit
+if ./conftest$ac_exeext < conftest.$ac_ext
+then
+rcs_cv_have_fflush_input=1
+fi
+])
+
+AC_SUBST(HAVE_FFLUSH_INPUT)
+AC_DEFINE_UNQUOTED([HAVE_FFLUSH_INPUT], [$rcs_cv_have_fflush_input],
+	[Does fflush() work on input files?])
+
+# some consts
+AC_SUBST(USE_NFS)
+AC_DEFINE_UNQUOTED([USE_NFS], [1],
+	[Might NFS be used?])
+
+AC_SUBST(TZ_MUST_BE_SET)
+AC_DEFINE_UNQUOTED([TZ_MUST_BE_SET], [0],
+	[Must TZ be set for gmtime() to work?])
+
+AC_SUBST(RCS_SHELL)
+AC_DEFINE_UNQUOTED([RCS_SHELL], ["/bin/sh"],
+	[shell to run RCS subprograms])
+
+AC_SUBST(NEEDS_GETABSNAME)
+AC_DEFINE_UNQUOTED([NEEDS_GETABSNAME], [0],
+	[Must we define getabsname?])
+
+AC_SUBST(COMPAT2)
+AC_DEFINE_UNQUOTED([COMPAT2], [0],
+	[Are version 2 files supported?])
+
+
+AC_MSG_CHECKING([gcc noreturn attribute])
+gcc_noreturn=yes
+AC_TRY_COMPILE([
+	__attribute__ ((noreturn)) void f();
+        void f(){ return 1;}
+	], [],
+	AC_DEFINE([HAVE_GCC_NORETURN],1,
+		[Define if gcc supports noreturn attribute]),
+	gcc_noreturn=no)
+AC_MSG_RESULT($gcc_noreturn)
+#
+
+AC_CACHE_CHECK([if `fopen (F, "w+")' truncates],[rcs_cv_fopen_truncates],[
+  echo nonempty > conftest.data
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <stdio.h>
+]],[[
+  return ! fopen ("conftest.data", "w+");
+]])
+],[res=yes],[res=no],[res=no])
+  test yes = $res && test ! -s conftest.data || res=no
+  rcs_cv_fopen_truncates=$res
+])
+RCS_CBOOL([BAD_FOPEN_WPLUS],[no],[rcs_cv_fopen_truncates],
+  [Does `fopen (F, "w+")' fail to truncate?])
+
+AC_CACHE_CHECK([if `write' after `creat (F, 0)' works],[rcs_cv_wac_ok],[
+  rm -f conftest.data
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#if defined O_CREAT && defined O_WRONLY
+# define creat0(f) open(f, O_CREAT|O_WRONLY, 0)
+#else
+# define creat0(f) creat(f, 0)
+#endif
+char buf[17000];
+]],[[
+  int f;
+  return (0 > (f = creat0 ("conftest.data"))
+          || sizeof (buf) != write (f, buf, sizeof (buf))
+          || 0 > close (f));
+]])
+],[res=yes],[res=no],[res=no])
+  AS_IF([test yes = "$res" \
+         && test -f conftest.data \
+         && test ! -w conftest.data],,
+        [res=no])
+  rcs_cv_wac_ok=$res
+])
+RCS_CBOOL([BAD_CREAT0],[no],[rcs_cv_wac_ok],
+  [Does `write' after `creat (F, 0)' fail in the wrong way?])
+
+AC_CACHE_CHECK([if `unlink' works on unwritable files],[rcs_cv_unlink_mw_ok],[
+  touch conftest.data
+  chmod -w conftest.data
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <unistd.h>
+]],[
+  return 0 > unlink ("conftest.data");
+])
+],[res=yes],[res=no],[res=no])
+  test yes = $res && test -f conftest.data && res=no
+  rcs_cv_unlink_mw_ok=$res
+])
+RCS_CBOOL([BAD_UNLINK],[no],[rcs_cv_unlink_mw_ok],
+  [Does `unlink' fail on unwritable files?])
+
+AC_CACHE_CHECK([if `wait' can handle ignored SIGCHLD],[rcs_cv_tolerant_wait],[
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <sys/types.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <unistd.h>
+]],[
+  signal (SIGCHLD, SIG_IGN);
+#ifdef HAVE_WORKING_FORK
+  {
+    int status;
+    pid_t p = fork ();
+    if (p < 0)
+      {
+        perror ("fork");
+        return 2;
+      }
+    if (!p)
+      _exit (0);
+    while (wait (&status) != p)
+      {
+        if (ECHILD == errno)
+          return 1;
+        if (EINTR != errno)
+          {
+            perror ("wait");
+            return 2;
+          }
+      }
+  }
+#else
+  if (0 > system ("true"))
+    return 1;
+#endif
+])dnl
+],[res=yes],[res=no],[res=no])
+  rcs_cv_tolerant_wait=$res
+])
+RCS_CBOOL([BAD_WAIT_IF_SIGCHLD_IGNORED],[no],[rcs_cv_tolerant_wait],
+  [Does ignoring SIGCHLD break `wait'?])
+
+AC_CACHE_CHECK([configuring READLINK_ISREG_ERRNO],[rcs_cv_readlink_isreg_errno],[
+rm -f a.sym* || exit
+ln -s a.sym1 a.sym2
+rcs_cv_readlink_isreg_errno='EINVAL'
+AC_LANG_CONFTEST([
+AC_LANG_PROGRAM([[
+#include "confdefs.h"
+#include <stdio.h>
+#include <errno.h>
+static char b[7];
+]],[[
+        if (readlink("a.sym2",b,7) == 6  &&  strcmp(b,"a.sym1") == 0  &&
+                readlink("conftest.c",b,7) == -1  &&  errno != ENOENT
+        ) {
+                if (errno == EINVAL)
+                        printf("EINVAL\n");
+                else
+                        printf("%d\n", errno);
+                return ferror(stdout) || fclose(stdout)!=0;
+        }
+        return 1;
+]])])
+_AC_DO_VAR(ac_link) || exit
+if rcs_cv_readlink_isreg_errno=`./conftest$ac_exeext`
+then res=1
+else res=0
+fi
+rm -f a.sym*
+])
+AC_DEFINE_UNQUOTED([READLINK_ISREG_ERRNO], [${rcs_cv_readlink_isreg_errno}],
+	[errno after readlink on regular file])
+
+#AC_CACHE_CHECK([configuring LONG_MAX],[rcs_cv_ulong_max],[
+#rcs_cv_ulong_max=$(printf '#include <limits.h>\nlong_max:LONG_MAX\n' |gcc -E - | grep long_max | cut -d: -f2)
+#])
+
+AC_CACHE_CHECK([configuring struct utimbuf],[rcs_cv_utimbuf],[
+rcs_cv_utimbuf=0
+AC_RUN_IFELSE([AC_LANG_PROGRAM([[
+#include <utime.h>
+static struct utimbuf s;
+]],[[
+s.actime = s.modtime = 1;
+return utime("conftest.c", &s) != 0;
+]])], [rcs_cv_utimbuf=1])
+])
+
+AC_SUBST(HAVE_STRUCT_UTIMBUF)
+AC_DEFINE_UNQUOTED([HAVE_STRUCT_UTIMBUF], [${rcs_cv_utimbuf}],
+	[Does struct utimbuf work?])
+
+AC_CACHE_CHECK([configuring HAVE_PRINTF_DOT],[rcs_cv_printf_dot],[
+rcs_cv_printf_dot=0
+AC_LANG_CONFTEST([
+AC_LANG_PROGRAM([[
+#include <stdio.h>
+]],[[
+printf("%.2d", 1);
+return ferror(stdout) || fclose(stdout) != 0;
+]])])
+_AC_DO_VAR(ac_link) || exit
+res=`./conftest$ac_exeext` || exit
+case $r in
+01)     rcs_cv_printf_dot=1;;
+*)      rcs_cv_printf_dot=0
+esac
+])
+
+AC_CONFIG_FILES([Makefile man/Makefile src/Makefile])
+
+AC_OUTPUT
